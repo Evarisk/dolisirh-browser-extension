@@ -147,27 +147,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentProfile.doliLogin) loginInput.value = currentProfile.doliLogin;
             }
 
-            const updateDoliShortcut = () => {
-                if (!openDoliLink) return;
+            const getSafeDoliWebUrl = () => {
                 const raw = urlInput.value.trim();
-                if (!raw) {
-                    openDoliLink.classList.add('hidden');
-                    return;
-                }
+                if (!raw) return null;
                 try {
                     const candidate = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
                     const parsed = new URL(candidate);
-                    const baseWebUrl = candidate.replace(/\/api\/index\.php\/?$/i, '');
-                    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                        openDoliLink.href = baseWebUrl;
-                        openDoliLink.classList.remove('hidden');
-                    } else {
-                        openDoliLink.classList.add('hidden');
-                    }
+                    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+                    parsed.pathname = parsed.pathname.replace(/\/api\/index\.php\/?$/i, '');
+                    return parsed.href;
                 } catch (e) {
+                    return null;
+                }
+            };
+
+            const updateDoliShortcut = () => {
+                if (!openDoliLink) return;
+                if (getSafeDoliWebUrl()) {
+                    openDoliLink.classList.remove('hidden');
+                } else {
                     openDoliLink.classList.add('hidden');
                 }
             };
+
+            if (openDoliLink) {
+                openDoliLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const safeUrl = getSafeDoliWebUrl();
+                    if (safeUrl) {
+                        chrome.tabs.create({ url: safeUrl });
+                    }
+                });
+            }
 
             urlInput.addEventListener('input', updateDoliShortcut);
             updateDoliShortcut();
