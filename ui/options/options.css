@@ -1,0 +1,499 @@
+﻿body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.options-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    width: 400px;
+    max-width: 100%;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+.logo {
+    width: 32px;
+    height: 32px;
+    margin-right: 15px;
+}
+
+h2 {
+    color: #2c3e50;
+    margin: 0;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.status-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    align-items: stretch;
+}
+
+.permissions-dashboard {
+    margin-top: 20px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.perm-category {
+    border-bottom: 1px solid #e0e0e0;
+}
+.perm-category:last-child {
+    border-bottom: none;
+}
+
+.perm-category-title {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    font-weight: bold;
+    font-size: 14px;
+    color: #2c3e50;
+    margin: 0;
+    border-bottom: 1px solid #eee;
+}
+
+.perm-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 13px;
+    color: #444;
+}
+.perm-row:last-child {
+    border-bottom: none;
+}
+
+.perm-id {
+    font-weight: bold;
+    color: #7f8c8d;
+    min-width: 45px;
+}
+
+.perm-title {
+    flex: 1;
+    padding-right: 15px;
+}
+
+.perm-link a {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 12px;
+    margin-right: 15px;
+    padding: 2px 6px;
+    border: 1px solid #3498db;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+.perm-link a:hover {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.perm-status {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.perm-status.ok {
+    background-color: #27ae60;
+    color: white;
+}
+
+.perm-status.ko {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.perm-status.warning {
+    background-color: #f39c12;
+    color: white;
+}
+
+.perm-status.pending {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.settings-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 15px 20px 5px 20px;
+    margin-bottom: 25px;
+    background-color: #fafafa;
+}
+
+.settings-section legend {
+    font-weight: bold;
+    color: #3498db;
+    background-color: white;
+    padding: 0 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.preview-box {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: white;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+.preview-text {
+    font-size: 14px;
+    color: #333;
+    font-family: monospace;
+    line-height: 1.5;
+}
+
+.preview-text p {
+    margin: 5px 0;
+}
+
+#doli-blur-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 60%;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #34495e;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't affect total width */
+    font-size: 14px;
+}
+
+input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.input-with-status {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.status-indicator {
+    position: absolute;
+    right: 10px;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: none; /* Masqué par défaut */
+}
+
+.status-ok {
+    display: inline-block;
+    background-color: #27ae60;
+    color: white;
+}
+
+.status-ko {
+    display: inline-block;
+    background-color: #e74c3c;
+    color: white;
+}
+
+button {
+    width: 100%;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+#status {
+    margin-top: 15px;
+    text-align: center;
+    color: #27ae60;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+/* Custom Radio Buttons for Image Format */
+.format-selection {
+    display: flex;
+    gap: 10px;
+}
+
+.format-option {
+    flex: 1;
+    cursor: pointer;
+}
+
+.format-option input[type="radio"] {
+    display: none;
+}
+
+.format-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: white;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.format-title {
+    font-weight: bold;
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.format-desc {
+    font-size: 11px;
+    color: #7f8c8d;
+}
+
+.format-option input[type="radio"]:checked + .format-card {
+    border-color: #3498db;
+    background-color: #ebf5fb;
+}
+
+.format-option input[type="radio"]:checked + .format-card .format-title {
+    color: #3498db;
+}
+
+.format-card:hover {
+    border-color: #bdc3c7;
+    background-color: #fcfcfc;
+}
+
+/* =========================================================================
+   Standard Error Handling (errors.js)
+   ========================================================================= */
+
+.doli-error-box {
+    background-color: #fdf2f2;
+    border: 1px solid #fabeb9;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #c0392b;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.doli-error-header {
+    font-weight: bold;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed #fabeb9;
+}
+
+.doli-error-body {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.doli-error-details {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 11px;
+}
+
+.doli-error-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #7f8c8d;
+    outline: none;
+}
+
+.doli-error-details pre {
+    margin-top: 6px;
+    margin-bottom: 0px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: monospace;
+    color: #444;
+}
+
+/* =========================================================================
+   PLANNING HEBDOMADAIRE & BOUTON SAVE RH
+   ========================================================================= */
+
+#hr-schedule-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 3px;
+    margin-top: 6px;
+    font-size: 12px;
+    table-layout: fixed;
+}
+
+#hr-schedule-table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    text-align: center;
+    padding: 5px 2px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px 4px 0 0;
+    font-size: 11px;
+    width: 14.28%;
+}
+
+#hr-schedule-table td {
+    text-align: center;
+    padding: 2px 0;
+    border: none;
+    width: 14.28%;
+}
+
+/* Input durée HH:MM */
+.hr-schedule-input {
+    width: 100%;
+    padding: 5px 2px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 4px;
+    background: #f8fafc;
+    color: #1e293b;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: text;
+}
+
+.hr-schedule-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+/* Masquer l'icône horloge (Chrome / Edge) */
+.hr-schedule-input::-webkit-calendar-picker-indicator {
+    display: none;
+    opacity: 0;
+    width: 0;
+    padding: 0;
+}
+
+/* Sam et Dim : style discret */
+#hr-schedule-sam,
+#hr-schedule-dim {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+/* ===== BOUTON SAVE RH : états idle / dirty ===== */
+#btn-save-hr {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.25s, box-shadow 0.25s, color 0.25s, opacity 0.2s;
+}
+
+/* Idle : gris, désactivé */
+#btn-save-hr.btn-save-hr-idle,
+#btn-save-hr:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: default;
+}
+
+/* Dirty : vert, actif */
+#btn-save-hr.btn-save-hr-dirty {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
+    cursor: pointer;
+}
+
+#btn-save-hr.btn-save-hr-dirty:hover {
+    opacity: 0.92;
+}
+
+/* ===== Label colonne planning RH ===== */
+.hr-schedule-row-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #64748b;
+    text-align: right;
+    padding-right: 4px;
+    white-space: nowrap;
+    vertical-align: middle;
+    width: 48px;
+}
