@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Options Extension DoliSIRH</title>
+    <link rel="stylesheet" href="options.css">
+    <link rel="stylesheet" href="../components/custom-select.css">
+    <link rel="stylesheet" href="../components/custom-multiselect.css">
+</head>
+<body>
+    <div class="options-container">
+        <div class="header">
+            <img src="icon32.png" alt="Logo" class="logo">
+            <h2>Options Extension DoliSIRH</h2>
+        </div>
+
+        <!-- Section de Gestion des Profils -->
+        <div class="profile-manager" style="margin-bottom: 20px; padding: 15px; background: #eef2f5; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                <label for="doli-profile-select" style="margin: 0; font-size: 13px;"><span data-i18n="opt_54"></span></label>
+                <select id="doli-profile-select" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; font-weight: bold; background-color: #fff;"></select>
+                <button id="btn-new-profile" style="display: inline-flex; justify-content: center; align-items: center; gap: 4px; padding: 0; box-sizing: border-box; width: 120px; height: 31px; background-color: #27ae60; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;" data-i18n-title="opt_title_96">
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 448 512"><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/></svg><span data-i18n="opt_55"></span></button>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="doli-profile-name" style="font-size: 12px; margin-bottom: 4px;"><span data-i18n="opt_56"></span></label>
+                <input type="text" id="doli-profile-name" data-i18n-placeholder="opt_ph_101" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 13px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="save-btn" style="display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 8px 16px; background-color: #27ae60; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;" data-i18n-title="opt_title_97">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 448 512"><path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V173.3c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32H64zm0 96c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v64c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V128zM224 256a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg><span data-i18n="opt_57"></span></button>
+                    <button id="btn-test-profile" style="display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 8px 16px; background-color: #3498db; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;" data-i18n-title="opt_title_98">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 512 512"><path d="M439 7c9.4-9.4 24.6-9.4 33.9 0l32 32c9.4 9.4 9.4 24.6 0 33.9l-87 87 39 39c6.9 6.9 8.9 17.2 5.2 26.2s-12.5 14.8-22.2 14.8H296c-13.3 0-24-10.7-24-24V72c0-9.7 5.8-18.5 14.8-22.2s19.3-1.7 26.2 5.2l39 39L439 7zM72 272H216c13.3 0 24 10.7 24 24V440c0 9.7-5.8 18.5-14.8 22.2s-19.3 1.7-26.2-5.2l-39-39L73 505c-9.4 9.4-24.6 9.4-33.9 0L7 473c-9.4-9.4-9.4-24.6 0-33.9l87-87L55 313c-6.9-6.9-8.9-17.2-5.2-26.2s12.5-14.8 22.2-14.8z"/></svg><span data-i18n="opt_58"></span></button>
+                    <button id="btn-delete-profile" style="display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 8px 16px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;" data-i18n-title="opt_title_99">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 448 512"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/></svg><span data-i18n="opt_59"></span></button>
+                </div>
+            </div>
+            <!-- Zone d'affichage des résultats du test -->
+            <div id="test-status-container" style="margin-top: 10px; font-size: 13px; font-weight: bold; text-align: center;"></div>
+            <div id="status" style="margin-top: 5px; font-size: 13px; font-weight: bold; text-align: center;"></div>
+        </div>
+
+        <fieldset class="settings-section" id="profile-settings-section">
+            <legend><span data-i18n="opt_60"></span></legend>
+            <div class="form-group">
+                <label for="doli-url"><span data-i18n="opt_61"></span></label>
+                <div class="input-with-status">
+                    <input type="url" id="doli-url" placeholder="https://..." required>
+                    <span id="api-status-indicator" class="status-indicator"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="doli-login"><span data-i18n="opt_62"></span></label>
+                <input type="text" id="doli-login" data-i18n-placeholder="opt_ph_102" required>
+            </div>
+
+            <div class="form-group">
+                <label for="doli-password"><span data-i18n="opt_63"></span></label>
+                <input type="password" id="doli-password" data-i18n-placeholder="opt_ph_103" required>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="doli-entity"><span data-i18n="opt_65"></span></label>
+                <input type="text" id="doli-entity" data-i18n-placeholder="opt_ph_104">
+            </div>
+
+            <div id="permissions-dashboard" class="permissions-dashboard hidden">
+                <!-- Généré dynamiquement en JS -->
+            </div>
+        </fieldset>
+
+        <fieldset class="settings-section">
+            <legend><span data-i18n="opt_pointage_rh"></span></legend>
+            <p style="font-size: 11px; color: #7f8c8d; margin-bottom: 10px; margin-top: 0;"><span data-i18n="opt_pointage_desc"></span></p>
+            
+            <div class="form-group">
+                <label for="doli-hr-project"><span data-i18n="opt_hr_project"></span></label>
+                <div class="searchable-select-container" style="width: 100%; margin-bottom: 8px;">
+                    <select id="doli-hr-project" class="searchable-select hidden">
+                        <option value="">-- Sélectionner un projet --</option>
+                    </select>
+                </div>
+                <button id="btn-fetch-hr-projects" type="button" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 8px; background-color: #3498db; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 512 512"><path d="M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8c62.5-62.5 163.8-62.5 226.3 0L386.3 160H336c-13.3 0-24 10.7-24 24s10.7 24 24 24H432c13.3 0 24-10.7 24-24V88c0-13.3-10.7-24-24-24s-24 10.7-24 24v49.4L390.5 120.6c-75-75-196.8-75-271.8 0c-26.1 26.1-45.9 57.6-58.2 92.4c-4.4 12.5 2.1 26.2 14.6 30.6s26.2-2.1 30.6-14.6zM406.9 309.4c-7.7 21.8-20.2 42.3-37.8 59.8c-62.5 62.5-163.8 62.5-226.3 0L125.7 352H176c13.3 0 24-10.7 24-24s-10.7-24-24-24H80c-13.3 0-24 10.7-24 24v96c0 13.3 10.7 24 24 24s24-10.7 24-24V399.4l17.5 17.5c75 75 196.8 75 271.8 0c26.1-26.1 45.9-57.6 58.2-92.4c4.4-12.5-2.1-26.2-14.6-30.6s-26.2 2.1-30.6 14.6z"/></svg>
+                    <span data-i18n="opt_75"></span>
+                </button>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="doli-hr-presence-tasks"><span data-i18n="opt_hr_presence_tasks"></span></label>
+                <div class="searchable-multiselect-container">
+                    <select id="doli-hr-presence-tasks" multiple data-placeholder="Ajouter une tâche de présence..." style="width: 100%; height: 80px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px;">
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label for="doli-hr-absence-tasks"><span data-i18n="opt_hr_absence_tasks"></span></label>
+                <div class="searchable-multiselect-container">
+                    <select id="doli-hr-absence-tasks" multiple data-placeholder="Ajouter une tâche d'absence..." style="width: 100%; height: 80px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px;">
+                    </select>
+                </div>
+            </div>
+
+            <!-- PLANNING HEBDOMADAIRE -->
+            <div class="form-group" style="margin-top: 18px;">
+                <label><span data-i18n="opt_hr_schedule">Temps de présence attendu par jour</span></label>
+                <table id="hr-schedule-table">
+                    <thead>
+                        <tr>
+                            <th style="width:48px;"></th>
+                            <th data-i18n="opt_hr_day_lun">Lun</th>
+                            <th data-i18n="opt_hr_day_mar">Mar</th>
+                            <th data-i18n="opt_hr_day_mer">Mer</th>
+                            <th data-i18n="opt_hr_day_jeu">Jeu</th>
+                            <th data-i18n="opt_hr_day_ven">Ven</th>
+                            <th data-i18n="opt_hr_day_sam">Sam</th>
+                            <th data-i18n="opt_hr_day_dim">Dim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="hr-schedule-row-label"><span data-i18n="opt_hr_start_label">Début</span></td>
+                            <td><input type="time" id="hr-start-lun" class="hr-schedule-input" value="09:00"></td>
+                            <td><input type="time" id="hr-start-mar" class="hr-schedule-input" value="09:00"></td>
+                            <td><input type="time" id="hr-start-mer" class="hr-schedule-input" value="09:00"></td>
+                            <td><input type="time" id="hr-start-jeu" class="hr-schedule-input" value="09:00"></td>
+                            <td><input type="time" id="hr-start-ven" class="hr-schedule-input" value="09:00"></td>
+                            <td><input type="time" id="hr-start-sam" class="hr-schedule-input" value="00:00"></td>
+                            <td><input type="time" id="hr-start-dim" class="hr-schedule-input" value="00:00"></td>
+                        </tr>
+                        <tr>
+                            <td class="hr-schedule-row-label"><span data-i18n="opt_hr_duration_label">Durée</span></td>
+                            <td><input type="time" id="hr-schedule-lun" class="hr-schedule-input" value="07:00"></td>
+                            <td><input type="time" id="hr-schedule-mar" class="hr-schedule-input" value="07:00"></td>
+                            <td><input type="time" id="hr-schedule-mer" class="hr-schedule-input" value="07:00"></td>
+                            <td><input type="time" id="hr-schedule-jeu" class="hr-schedule-input" value="07:00"></td>
+                            <td><input type="time" id="hr-schedule-ven" class="hr-schedule-input" value="07:00"></td>
+                            <td><input type="time" id="hr-schedule-sam" class="hr-schedule-input" value="00:00"></td>
+                            <td><input type="time" id="hr-schedule-dim" class="hr-schedule-input" value="00:00"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="font-size: 10px; color: #94a3b8; margin-top: 4px; margin-bottom: 12px;" data-i18n="opt_hr_schedule_hint">Format HH:MM (ex: 07:30)</p>
+            </div>
+
+            <!-- BOUTON SAVE HR -->
+            <button type="button" id="btn-save-hr" class="btn-save-hr-idle" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <span id="btn-save-hr-text" data-i18n="opt_hr_save">Enregistrer la configuration RH</span>
+            </button>
+            <div id="hr-save-status" style="font-size:11px;text-align:center;margin-top:6px;font-weight:600;"></div>
+        </fieldset>
+
+    </div>
+    <script src="../../src/utils/i18n.js"></script>
+    <script src="../../src/utils/errors.js"></script>
+    <script type="module" src="options.js"></script>
+</body>
+</html>

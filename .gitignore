@@ -1,0 +1,14 @@
+scratch/
+
+# Scripts temporaires de patch/migration
+patch_*.js
+add_trans*.js
+remove_text.js
+
+# Tests locaux
+tests/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.swp
