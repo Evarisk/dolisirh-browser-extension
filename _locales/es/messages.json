@@ -1,649 +1,701 @@
 {
-    "popup_1": {
-        "message": "[ES] ReedCRM - Nouveau Ticket",
-        "description": "Extracted string popup_1"
-    },
-    "popup_2": {
-        "message": "[ES] + Opp",
-        "description": "Extracted string popup_2"
-    },
-    "popup_3": {
-        "message": "[ES] Opp",
-        "description": "Extracted string popup_3"
-    },
-    "popup_4": {
-        "message": "[ES] Ticket",
-        "description": "Extracted string popup_4"
-    },
-    "popup_5": {
-        "message": "[ES] Client / Prospect",
-        "description": "Extracted string popup_5"
-    },
-    "popup_6": {
-        "message": "[ES] Contact",
-        "description": "Extracted string popup_6"
-    },
-    "popup_7": {
-        "message": "[ES] Projet",
-        "description": "Extracted string popup_7"
-    },
-    "popup_8": {
-        "message": "[ES] Veuillez configurer vos accès à l'API Dolibarr avant d'utiliser l'extension.",
-        "description": "Extracted string popup_8"
-    },
-    "popup_9": {
-        "message": "[ES] Ouvrir les Paramètres",
-        "description": "Extracted string popup_9"
-    },
-    "popup_10": {
-        "message": "[ES] Sujet du ticket",
-        "description": "Extracted string popup_10"
-    },
-    "popup_11": {
-        "message": "[ES] Description / Message",
-        "description": "Extracted string popup_11"
-    },
-    "popup_12": {
-        "message": "[ES] Assigner à",
-        "description": "Extracted string popup_12"
-    },
-    "popup_13": {
-        "message": "[ES] -- Non assigné --",
-        "description": "Extracted string popup_13"
-    },
-    "popup_14": {
-        "message": "[ES] Chargement des utilisateurs...",
-        "description": "Extracted string popup_14"
-    },
-    "popup_15": {
-        "message": "[ES] Pièce jointe ou (Ctrl+V)",
-        "description": "Extracted string popup_15"
-    },
-    "popup_16": {
-        "message": "[ES] Ou collez une image ici",
-        "description": "Extracted string popup_16"
-    },
-    "popup_17": {
-        "message": "[ES] Capture d'écran",
-        "description": "Extracted string popup_17"
-    },
-    "popup_18": {
-        "message": "[ES] Capturer",
-        "description": "Extracted string popup_18"
-    },
-    "popup_19": {
-        "message": "[ES] ⚠️ Votre compte API n'a pas les droits Documents (GED). L'envoi de fichiers échouera.",
-        "description": "Extracted string popup_19"
-    },
-    "popup_20": {
-        "message": "[ES] Chargement...",
-        "description": "Extracted string popup_20"
-    },
-    "popup_21": {
-        "message": "[ES] Derniers tickets créés",
-        "description": "Extracted string popup_21"
-    },
-    "popup_22": {
-        "message": "[ES] Chargement...",
-        "description": "Extracted string popup_22"
-    },
-    "popup_23": {
-        "message": "[ES] Sujet de l'opportunité (Nom du projet)",
-        "description": "Extracted string popup_23"
-    },
-    "popup_24": {
-        "message": "[ES] https://",
-        "description": "Extracted string popup_24"
-    },
-    "popup_25": {
-        "message": "[ES] http://",
-        "description": "Extracted string popup_25"
-    },
-    "popup_26": {
-        "message": "[ES] Assigner à (Chef de projet)",
-        "description": "Extracted string popup_26"
-    },
-    "popup_27": {
-        "message": "[ES] -- Non assigné --",
-        "description": "Extracted string popup_27"
-    },
-    "popup_28": {
-        "message": "[ES] Chargement des utilisateurs...",
-        "description": "Extracted string popup_28"
-    },
-    "popup_29": {
-        "message": "[ES] Pièce jointe ou (Ctrl+V)",
-        "description": "Extracted string popup_29"
-    },
-    "popup_30": {
-        "message": "[ES] Ou collez une image ici",
-        "description": "Extracted string popup_30"
-    },
-    "popup_31": {
-        "message": "[ES] Capture d'écran",
-        "description": "Extracted string popup_31"
-    },
-    "popup_32": {
-        "message": "[ES] Capturer",
-        "description": "Extracted string popup_32"
-    },
-    "popup_33": {
-        "message": "[ES] ⚠️ Votre compte API n'a pas les droits Documents (GED). L'envoi de fichiers échouera.",
-        "description": "Extracted string popup_33"
-    },
-    "popup_34": {
-        "message": "[ES] Créer l'opportunité",
-        "description": "Extracted string popup_34"
-    },
-    "popup_35": {
-        "message": "[ES] Dernières opportunités créées",
-        "description": "Extracted string popup_35"
-    },
-    "popup_36": {
-        "message": "[ES] Chargement...",
-        "description": "Extracted string popup_36"
-    },
-    "popup_title_37": {
-        "message": "[ES] Créer une opportunité",
-        "description": "Extracted string popup_title_37"
-    },
-    "popup_title_38": {
-        "message": "[ES] Page des opportunités à venir",
-        "description": "Extracted string popup_title_38"
-    },
-    "popup_title_39": {
-        "message": "[ES] Nouveau ticket",
-        "description": "Extracted string popup_title_39"
-    },
-    "popup_title_40": {
-        "message": "[ES] Vider le formulaire et le brouillon",
-        "description": "Extracted string popup_title_40"
-    },
-    "popup_title_41": {
-        "message": "[ES] Vider le formulaire et le brouillon",
-        "description": "Extracted string popup_title_41"
-    },
-    "popup_title_42": {
-        "message": "[ES] Veuillez saisir un numéro valide (ex: 06 12 34 56 78 ou +3361234...)",
-        "description": "Extracted string popup_title_42"
-    },
-    "popup_title_43": {
-        "message": "[ES] Exemple de domaine valide: monsite.com",
-        "description": "Extracted string popup_title_43"
-    },
-    "popup_ph_44": {
-        "message": "[ES] Ex: Problème de connexion...",
-        "description": "Extracted string popup_ph_44"
-    },
-    "popup_ph_45": {
-        "message": "[ES] Détaillez votre demande ici...",
-        "description": "Extracted string popup_ph_45"
-    },
-    "popup_ph_46": {
-        "message": "[ES] Ex: Projet Refonte Web...",
-        "description": "Extracted string popup_ph_46"
-    },
-    "popup_ph_47": {
-        "message": "[ES] Détails de l'opportunité...",
-        "description": "Extracted string popup_ph_47"
-    },
-    "popup_ph_48": {
-        "message": "[ES] Nom",
-        "description": "Extracted string popup_ph_48"
-    },
-    "popup_ph_49": {
-        "message": "[ES] Prénom",
-        "description": "Extracted string popup_ph_49"
-    },
-    "popup_ph_50": {
-        "message": "[ES] Téléphone projet",
-        "description": "Extracted string popup_ph_50"
-    },
-    "popup_ph_51": {
-        "message": "[ES] Email",
-        "description": "Extracted string popup_ph_51"
-    },
-    "popup_ph_52": {
-        "message": "[ES] Website",
-        "description": "Extracted string popup_ph_52"
-    },
-    "opt_53": {
-        "message": "[ES] Option Extension ReedCRM",
-        "description": "Extracted string opt_53"
-    },
-    "opt_54": {
-        "message": "[ES] Profil actif :",
-        "description": "Extracted string opt_54"
-    },
-    "opt_55": {
-        "message": "[ES] Nouveau",
-        "description": "Extracted string opt_55"
-    },
-    "opt_56": {
-        "message": "[ES] Renommer ce profil (Ex: Dolibarr.org, eoxia.com)",
-        "description": "Extracted string opt_56"
-    },
-    "opt_57": {
-        "message": "[ES] Enregistrer",
-        "description": "Extracted string opt_57"
-    },
-    "opt_58": {
-        "message": "[ES] Tester",
-        "description": "Extracted string opt_58"
-    },
-    "opt_59": {
-        "message": "[ES] Supprimer",
-        "description": "Extracted string opt_59"
-    },
-    "opt_60": {
-        "message": "[ES] Paramètres API de ce profil",
-        "description": "Extracted string opt_60"
-    },
-    "opt_61": {
-        "message": "[ES] URL complète de l'API Dolibarr (ex: https://www.dolibarr.org/htdocs/api/index.php)",
-        "description": "Extracted string opt_61"
-    },
-    "opt_62": {
-        "message": "[ES] Identifiant (Login)",
-        "description": "Extracted string opt_62"
-    },
-    "opt_63": {
-        "message": "[ES] Mot de passe / Clé API",
-        "description": "Extracted string opt_63"
-    },
-    "opt_64": {
-        "message": "[ES] Assigner auto. à l'utilisateur API",
-        "description": "Extracted string opt_64"
-    },
-    "opt_65": {
-        "message": "[ES] ID de l'entité (Optionnel - Pour module MultiCompany, ex: 1, 2...)",
-        "description": "Extracted string opt_65"
-    },
-    "opt_66": {
-        "message": "[ES] Paramètres Tickets",
-        "description": "Extracted string opt_66"
-    },
-    "opt_67": {
-        "message": "[ES] Renseignez les codes stricts (ex: ISSUE, NORMAL, OTHER) attendus par votre Dolibarr. Ces champs empêchent les erreurs 500 si votre API requiert des valeurs obligatoires à la création.",
-        "description": "Extracted string opt_67"
-    },
-    "opt_68": {
-        "message": "[ES] Code \"Type de demande\" (Défaut : ISSUE)",
-        "description": "Extracted string opt_68"
-    },
-    "opt_69": {
-        "message": "[ES] Code \"Sévérité\" (Défaut : NORMAL)",
-        "description": "Extracted string opt_69"
-    },
-    "opt_70": {
-        "message": "[ES] Code \"Groupe du ticket\" (Optionnel ou requis selon conf)",
-        "description": "Extracted string opt_70"
-    },
-    "opt_71": {
-        "message": "[ES] Dictionnaire (Origines Opportunité)",
-        "description": "Extracted string opt_71"
-    },
-    "opt_72": {
-        "message": "[ES] ID : Label",
-        "description": "Extracted string opt_72"
-    },
-    "opt_73": {
-        "message": "[ES] 6 : Shop contact",
-        "description": "Extracted string opt_73"
-    },
-    "opt_74": {
-        "message": "[ES] Accueil > Configuration > Dictionnaires",
-        "description": "Extracted string opt_74"
-    },
-    "opt_75": {
-        "message": "[ES] Mettre à jour via l'API",
-        "description": "Extracted string opt_75"
-    },
-    "opt_76": {
-        "message": "[ES] Paramètres Opportunités/Projet",
-        "description": "Extracted string opt_76"
-    },
-    "opt_77": {
-        "message": "[ES] Forcer \"Suivre une opportunité\"",
-        "description": "Extracted string opt_77"
-    },
-    "opt_78": {
-        "message": "[ES] Cochez cette case pour lier automatiquement la création à une opportunité, et filtrer la liste récente sur ces dernières.",
-        "description": "Extracted string opt_78"
-    },
-    "opt_79": {
-        "message": "[ES] Interface par défaut",
-        "description": "Extracted string opt_79"
-    },
-    "opt_80": {
-        "message": "[ES] Vue à l'ouverture de l'extension",
-        "description": "Extracted string opt_80"
-    },
-    "opt_81": {
-        "message": "[ES] Ticket",
-        "description": "Extracted string opt_81"
-    },
-    "opt_82": {
-        "message": "[ES] Opportunité",
-        "description": "Extracted string opt_82"
-    },
-    "opt_83": {
-        "message": "[ES] Nombre maximum de tickets récents à afficher",
-        "description": "Extracted string opt_83"
-    },
-    "opt_84": {
-        "message": "[ES] Capture d'écran",
-        "description": "Extracted string opt_84"
-    },
-    "opt_85": {
-        "message": "[ES] Format de l'image",
-        "description": "Extracted string opt_85"
-    },
-    "opt_86": {
-        "message": "[ES] PNG",
-        "description": "Extracted string opt_86"
-    },
-    "opt_87": {
-        "message": "[ES] Qualité Max (0% comp.)",
-        "description": "Extracted string opt_87"
-    },
-    "opt_88": {
-        "message": "[ES] JPG",
-        "description": "Extracted string opt_88"
-    },
-    "opt_89": {
-        "message": "[ES] Léger (15% comp.)",
-        "description": "Extracted string opt_89"
-    },
-    "opt_90": {
-        "message": "[ES] Intensité du floutage des captures",
-        "description": "Extracted string opt_90"
-    },
-    "opt_91": {
-        "message": "[ES] Léger (Min)",
-        "description": "Extracted string opt_91"
-    },
-    "opt_92": {
-        "message": "[ES] 8px",
-        "description": "Extracted string opt_92"
-    },
-    "opt_93": {
-        "message": "[ES] Fort (Max)",
-        "description": "Extracted string opt_93"
-    },
-    "opt_94": {
-        "message": "[ES] Texte confidentiel",
-        "description": "Extracted string opt_94"
-    },
-    "opt_95": {
-        "message": "[ES] contact@exmple.com",
-        "description": "Extracted string opt_95"
-    },
-    "opt_title_96": {
-        "message": "[ES] Créer un nouveau profil",
-        "description": "Extracted string opt_title_96"
-    },
-    "opt_title_97": {
-        "message": "[ES] Sauvegarder la configuration",
-        "description": "Extracted string opt_title_97"
-    },
-    "opt_title_98": {
-        "message": "[ES] Tester la connexion API",
-        "description": "Extracted string opt_title_98"
-    },
-    "opt_title_99": {
-        "message": "[ES] Supprimer ce profil",
-        "description": "Extracted string opt_title_99"
-    },
-    "opt_title_100": {
-        "message": "[ES] Récupérer depuis l'API Dolibarr",
-        "description": "Extracted string opt_title_100"
-    },
-    "opt_ph_101": {
-        "message": "[ES] Nom pour ce profil",
-        "description": "Extracted string opt_ph_101"
-    },
-    "opt_ph_102": {
-        "message": "[ES] Votre identifiant",
-        "description": "Extracted string opt_ph_102"
-    },
-    "opt_ph_103": {
-        "message": "[ES] Votre mot de passe ou clé API",
-        "description": "Extracted string opt_ph_103"
-    },
-    "opt_ph_104": {
-        "message": "[ES] Laisser vide pour l'entité par défaut",
-        "description": "Extracted string opt_ph_104"
-    },
-    "opt_ph_105": {
-        "message": "[ES] ISSUE",
-        "description": "Extracted string opt_ph_105"
-    },
-    "opt_ph_106": {
-        "message": "[ES] NORMAL",
-        "description": "Extracted string opt_ph_106"
-    },
-    "opt_ph_107": {
-        "message": "[ES] Code (ex: OTHER)",
-        "description": "Extracted string opt_ph_107"
-    },
-    "opt_ph_108": {
-        "message": "[ES] 1 : Appel entrant&#10;6 : Shop contact",
-        "description": "Extracted string opt_ph_108"
-    },
-    "opt_ph_109": {
-        "message": "[ES] Ex: 10",
-        "description": "Extracted string opt_ph_109"
-    },
-    "popup_js_110": {
-        "message": "[ES] Aucun résultat...",
-        "description": "Extracted string popup_js_110"
-    },
-    "popup_js_111": {
-        "message": "[ES] Créer le ticket",
-        "description": "Extracted string popup_js_111"
-    },
-    "popup_js_112": {
-        "message": "[ES] Créer l\\",
-        "description": "Extracted string popup_js_112"
-    },
-    "popup_js_113": {
-        "message": "[ES] (${drop.proba}%)",
-        "description": "Extracted string popup_js_113"
-    },
-    "popup_js_114": {
-        "message": "[ES] (${localItems.doliPrefillOppProba}%)",
-        "description": "Extracted string popup_js_114"
-    },
-    "popup_js_115": {
-        "message": "[ES] (${probaInput.value}%)",
-        "description": "Extracted string popup_js_115"
-    },
-    "popup_js_116": {
-        "message": "[ES] Création Opportunité...",
-        "description": "Extracted string popup_js_116"
-    },
-    "popup_js_117": {
-        "message": "[ES] Projet créé...",
-        "description": "Extracted string popup_js_117"
-    },
-    "popup_js_118": {
-        "message": "[ES] Contact affecté...",
-        "description": "Extracted string popup_js_118"
-    },
-    "popup_js_119": {
-        "message": "[ES] Erreur réseau Contact...",
-        "description": "Extracted string popup_js_119"
-    },
-    "popup_js_120": {
-        "message": "[ES] Envoi Pièce jointe...",
-        "description": "Extracted string popup_js_120"
-    },
-    "popup_js_121": {
-        "message": "[ES] Opportunité créée !",
-        "description": "Extracted string popup_js_121"
-    },
-    "popup_js_122": {
-        "message": "[ES] Réessayer",
-        "description": "Extracted string popup_js_122"
-    },
-    "popup_js_123": {
-        "message": "[ES] Création du ticket...",
-        "description": "Extracted string popup_js_123"
-    },
-    "popup_js_124": {
-        "message": "[ES] Envoi de la pièce jointe...",
-        "description": "Extracted string popup_js_124"
-    },
-    "popup_js_125": {
-        "message": "[ES] Ticket créé !",
-        "description": "Extracted string popup_js_125"
-    },
-    "popup_js_126": {
-        "message": "[ES] Réessayer",
-        "description": "Extracted string popup_js_126"
-    },
-    "popup_js_127": {
-        "message": "[ES] Réessayer",
-        "description": "Extracted string popup_js_127"
-    },
-    "popup_js_128": {
-        "message": "[ES] Capture...",
-        "description": "Extracted string popup_js_128"
-    },
-    "popup_js_129": {
-        "message": "[ES] Erreur capture (Permissions ?): ",
-        "description": "Extracted string popup_js_129"
-    },
-    "popup_js_130": {
-        "message": "[ES] Erreur: Impossible de trouver l'onglet actif.",
-        "description": "Extracted string popup_js_130"
-    },
-    "popup_js_131": {
-        "message": "[ES] Bug critique capture: ",
-        "description": "Extracted string popup_js_131"
-    },
-    "popup_js_132": {
-        "message": "[ES] Erreur Capture",
-        "description": "Extracted string popup_js_132"
-    },
-    "popup_js_133": {
-        "message": "[ES] Copié !",
-        "description": "Extracted string popup_js_133"
-    },
-    "popup_jsph_134": {
-        "message": "[ES] Rechercher...",
-        "description": "Extracted string popup_jsph_134"
-    },
-    "opt_js_135": {
-        "message": "[ES] Please fill in the URL, the login and the password before testing.",
-        "description": "Extracted string opt_js_135"
-    },
-    "opt_js_136": {
-        "message": "[ES] Test en cours...",
-        "description": "Extracted string opt_js_136"
-    },
-    "opt_js_137": {
-        "message": "[ES] ❌ Échec de la connexion.",
-        "description": "Extracted string opt_js_137"
-    },
-    "opt_js_138": {
-        "message": "[ES] 🔌 Tester",
-        "description": "Extracted string opt_js_138"
-    },
-    "opt_js_139": {
-        "message": "[ES] Veuillez d'abord Tester et Enregistrer votre connexion haut-dessus.",
-        "description": "Extracted string opt_js_139"
-    },
-    "opt_js_140": {
-        "message": "[ES] Récupération en cours...",
-        "description": "Extracted string opt_js_140"
-    },
-    "opt_js_141": {
-        "message": "[ES] API verrouillée (404/403). Le dictionnaire standard Dolibarr par défaut a été rempli. Pensez à Enregistrer !",
-        "description": "Extracted string opt_js_141"
-    },
-    "opt_js_142": {
-        "message": "[ES] Dictionnaire mis à jour ! Pensez à Enregistrer de nouveau le profil en haut pour valider.",
-        "description": "Extracted string opt_js_142"
-    },
-    "opt_js_143": {
-        "message": "[ES] Veuillez remplir tous les champs obligatoires (URL, Login, Mot de passe).",
-        "description": "Extracted string opt_js_143"
-    },
-    "opt_js_144": {
-        "message": "[ES] Sauvegarde en cours...",
-        "description": "Extracted string opt_js_144"
-    },
-    "opt_js_145": {
-        "message": "[ES] ✅ Paramètres sauvegardés avec succès !",
-        "description": "Extracted string opt_js_145"
-    },
-    "opt_js_146": {
-        "message": "[ES] Enregistrer",
-        "description": "Extracted string opt_js_146"
-    },
-    "error_permission_denied": {
-        "message": "Atención: Permiso del navegador denegado. La API puede estar bloqueada.",
-        "description": "Avertissement affiché si l'utilisateur refuse la permission host_permissions lors de la configuration du CRM."
-    },
-    "editor_crop": {
-        "message": "Recortar"
-    },
-    "editor_draw": {
-        "message": "Dibujar"
-    },
-    "editor_arrow": {
-        "message": "Flecha"
-    },
-    "editor_text": {
-        "message": "Texto"
-    },
-    "editor_box": {
-        "message": "Marco"
-    },
-    "editor_blur": {
-        "message": "Desenfocar"
-    },
-    "editor_bullet": {
-        "message": "Viñeta"
-    },
-    "editor_color_label": {
-        "message": "Color"
-    },
-    "editor_size_label": {
-        "message": "Grosor"
-    },
-    "editor_save_btn": {
-        "message": "Confirmar"
-    },
-    "editor_cancel_btn": {
-        "message": "Cancelar"
-    },
-    "editor_settings_title": {
-        "message": "Abrir configuración"
-    },
-    "error_2003": {
-        "message": "Falta el logotipo de su Dolibarr"
-    },
-    "btn_fix_logo": {
-        "message": "Haga clic aquí para añadirlo"
-    },
-    "onboarding_title": { "message": "Bienvenido a ReedCRM" },
-    "onboarding_desc": { "message": "Conecte su navegador a Dolibarr para gestionar oportunidades, tickets y tiempos en un clic." },
-    "onboarding_link_site": { "message": "Sitio ReedCRM" },
-    "onboarding_link_store": { "message": "Módulo DoliStore" },
-    "onboarding_link_doc": { "message": "Documentación" },
-    "onboarding_form_title": { "message": "Primera conexión a Dolibarr" },
-    "onboarding_url_label": { "message": "Enlace a su Dolibarr" },
-    "onboarding_url_ph": { "message": "https://su-dolibarr.com" },
-    "onboarding_url_hint": { "message": "Ingrese la dirección de su Dolibarr (la API se detectará automáticamente)." },
-    "onboarding_open_doli": { "message": "Abrir mi Dolibarr ↗" },
-    "onboarding_btn_connect": { "message": "Probar y conectar" },
-    "onboarding_btn_advanced": { "message": "Configuración avanzada" },
-    "opt_default_mode_label": { "message": "Vista predeterminada al abrir" },
-    "std_planned_time_title": { "message": "Tiempo previsto" },
-    "std_spent_time_title": { "message": "Tiempo dedicado" },
-    "opt_auto_create_spj_label": { "message": "Crear y preseleccionar automáticamente la tarea SPJ_[Título del proyecto] si no hay tareas" },
-    "opt_require_note_label": { "message": "Hacer obligatorio el campo Nota / Comentario" }
+  "popup_1": {
+    "message": "[ES] ReedCRM - Nouveau Ticket",
+    "description": "Extracted string popup_1"
+  },
+  "popup_2": {
+    "message": "[ES] + Opp",
+    "description": "Extracted string popup_2"
+  },
+  "popup_3": {
+    "message": "[ES] Opp",
+    "description": "Extracted string popup_3"
+  },
+  "popup_4": {
+    "message": "[ES] Ticket",
+    "description": "Extracted string popup_4"
+  },
+  "popup_5": {
+    "message": "[ES] Client / Prospect",
+    "description": "Extracted string popup_5"
+  },
+  "popup_6": {
+    "message": "[ES] Contact",
+    "description": "Extracted string popup_6"
+  },
+  "popup_7": {
+    "message": "[ES] Projet",
+    "description": "Extracted string popup_7"
+  },
+  "popup_8": {
+    "message": "[ES] Veuillez configurer vos accès à l'API Dolibarr avant d'utiliser l'extension.",
+    "description": "Extracted string popup_8"
+  },
+  "popup_9": {
+    "message": "[ES] Ouvrir les Paramètres",
+    "description": "Extracted string popup_9"
+  },
+  "popup_10": {
+    "message": "[ES] Sujet du ticket",
+    "description": "Extracted string popup_10"
+  },
+  "popup_11": {
+    "message": "[ES] Description / Message",
+    "description": "Extracted string popup_11"
+  },
+  "popup_12": {
+    "message": "[ES] Assigner à",
+    "description": "Extracted string popup_12"
+  },
+  "popup_13": {
+    "message": "[ES] -- Non assigné --",
+    "description": "Extracted string popup_13"
+  },
+  "popup_14": {
+    "message": "[ES] Chargement des utilisateurs...",
+    "description": "Extracted string popup_14"
+  },
+  "popup_15": {
+    "message": "[ES] Pièce jointe ou (Ctrl+V)",
+    "description": "Extracted string popup_15"
+  },
+  "popup_16": {
+    "message": "[ES] Ou collez une image ici",
+    "description": "Extracted string popup_16"
+  },
+  "popup_17": {
+    "message": "[ES] Capture d'écran",
+    "description": "Extracted string popup_17"
+  },
+  "popup_18": {
+    "message": "[ES] Capturer",
+    "description": "Extracted string popup_18"
+  },
+  "popup_19": {
+    "message": "[ES] ⚠️ Votre compte API n'a pas les droits Documents (GED). L'envoi de fichiers échouera.",
+    "description": "Extracted string popup_19"
+  },
+  "popup_20": {
+    "message": "[ES] Chargement...",
+    "description": "Extracted string popup_20"
+  },
+  "popup_21": {
+    "message": "[ES] Derniers tickets créés",
+    "description": "Extracted string popup_21"
+  },
+  "popup_22": {
+    "message": "[ES] Chargement...",
+    "description": "Extracted string popup_22"
+  },
+  "popup_23": {
+    "message": "[ES] Sujet de l'opportunité (Nom du projet)",
+    "description": "Extracted string popup_23"
+  },
+  "popup_24": {
+    "message": "[ES] https://",
+    "description": "Extracted string popup_24"
+  },
+  "popup_25": {
+    "message": "[ES] http://",
+    "description": "Extracted string popup_25"
+  },
+  "popup_26": {
+    "message": "[ES] Assigner à (Chef de projet)",
+    "description": "Extracted string popup_26"
+  },
+  "popup_27": {
+    "message": "[ES] -- Non assigné --",
+    "description": "Extracted string popup_27"
+  },
+  "popup_28": {
+    "message": "[ES] Chargement des utilisateurs...",
+    "description": "Extracted string popup_28"
+  },
+  "popup_29": {
+    "message": "[ES] Pièce jointe ou (Ctrl+V)",
+    "description": "Extracted string popup_29"
+  },
+  "popup_30": {
+    "message": "[ES] Ou collez une image ici",
+    "description": "Extracted string popup_30"
+  },
+  "popup_31": {
+    "message": "[ES] Capture d'écran",
+    "description": "Extracted string popup_31"
+  },
+  "popup_32": {
+    "message": "[ES] Capturer",
+    "description": "Extracted string popup_32"
+  },
+  "popup_33": {
+    "message": "[ES] ⚠️ Votre compte API n'a pas les droits Documents (GED). L'envoi de fichiers échouera.",
+    "description": "Extracted string popup_33"
+  },
+  "popup_34": {
+    "message": "[ES] Créer l'opportunité",
+    "description": "Extracted string popup_34"
+  },
+  "popup_35": {
+    "message": "[ES] Dernières opportunités créées",
+    "description": "Extracted string popup_35"
+  },
+  "popup_36": {
+    "message": "[ES] Chargement...",
+    "description": "Extracted string popup_36"
+  },
+  "popup_title_37": {
+    "message": "[ES] Créer une opportunité",
+    "description": "Extracted string popup_title_37"
+  },
+  "popup_title_38": {
+    "message": "[ES] Page des opportunités à venir",
+    "description": "Extracted string popup_title_38"
+  },
+  "popup_title_39": {
+    "message": "[ES] Nouveau ticket",
+    "description": "Extracted string popup_title_39"
+  },
+  "popup_title_40": {
+    "message": "[ES] Vider le formulaire et le brouillon",
+    "description": "Extracted string popup_title_40"
+  },
+  "popup_title_41": {
+    "message": "[ES] Vider le formulaire et le brouillon",
+    "description": "Extracted string popup_title_41"
+  },
+  "popup_title_42": {
+    "message": "[ES] Veuillez saisir un numéro valide (ex: 06 12 34 56 78 ou +3361234...)",
+    "description": "Extracted string popup_title_42"
+  },
+  "popup_title_43": {
+    "message": "[ES] Exemple de domaine valide: monsite.com",
+    "description": "Extracted string popup_title_43"
+  },
+  "popup_ph_44": {
+    "message": "[ES] Ex: Problème de connexion...",
+    "description": "Extracted string popup_ph_44"
+  },
+  "popup_ph_45": {
+    "message": "[ES] Détaillez votre demande ici...",
+    "description": "Extracted string popup_ph_45"
+  },
+  "popup_ph_46": {
+    "message": "[ES] Ex: Projet Refonte Web...",
+    "description": "Extracted string popup_ph_46"
+  },
+  "popup_ph_47": {
+    "message": "[ES] Détails de l'opportunité...",
+    "description": "Extracted string popup_ph_47"
+  },
+  "popup_ph_48": {
+    "message": "[ES] Nom",
+    "description": "Extracted string popup_ph_48"
+  },
+  "popup_ph_49": {
+    "message": "[ES] Prénom",
+    "description": "Extracted string popup_ph_49"
+  },
+  "popup_ph_50": {
+    "message": "[ES] Téléphone projet",
+    "description": "Extracted string popup_ph_50"
+  },
+  "popup_ph_51": {
+    "message": "[ES] Email",
+    "description": "Extracted string popup_ph_51"
+  },
+  "popup_ph_52": {
+    "message": "[ES] Website",
+    "description": "Extracted string popup_ph_52"
+  },
+  "opt_53": {
+    "message": "[ES] Option Extension ReedCRM",
+    "description": "Extracted string opt_53"
+  },
+  "opt_54": {
+    "message": "[ES] Profil actif :",
+    "description": "Extracted string opt_54"
+  },
+  "opt_55": {
+    "message": "[ES] Nouveau",
+    "description": "Extracted string opt_55"
+  },
+  "opt_56": {
+    "message": "[ES] Renommer ce profil (Ex: Dolibarr.org, eoxia.com)",
+    "description": "Extracted string opt_56"
+  },
+  "opt_57": {
+    "message": "[ES] Enregistrer",
+    "description": "Extracted string opt_57"
+  },
+  "opt_58": {
+    "message": "[ES] Tester",
+    "description": "Extracted string opt_58"
+  },
+  "opt_59": {
+    "message": "[ES] Supprimer",
+    "description": "Extracted string opt_59"
+  },
+  "opt_60": {
+    "message": "[ES] Paramètres API de ce profil",
+    "description": "Extracted string opt_60"
+  },
+  "opt_61": {
+    "message": "[ES] URL complète de l'API Dolibarr (ex: https://www.dolibarr.org/htdocs/api/index.php)",
+    "description": "Extracted string opt_61"
+  },
+  "opt_62": {
+    "message": "[ES] Identifiant (Login)",
+    "description": "Extracted string opt_62"
+  },
+  "opt_63": {
+    "message": "[ES] Mot de passe / Clé API",
+    "description": "Extracted string opt_63"
+  },
+  "opt_64": {
+    "message": "[ES] Assigner auto. à l'utilisateur API",
+    "description": "Extracted string opt_64"
+  },
+  "opt_65": {
+    "message": "[ES] ID de l'entité (Optionnel - Pour module MultiCompany, ex: 1, 2...)",
+    "description": "Extracted string opt_65"
+  },
+  "opt_66": {
+    "message": "[ES] Paramètres Tickets",
+    "description": "Extracted string opt_66"
+  },
+  "opt_67": {
+    "message": "[ES] Renseignez les codes stricts (ex: ISSUE, NORMAL, OTHER) attendus par votre Dolibarr. Ces champs empêchent les erreurs 500 si votre API requiert des valeurs obligatoires à la création.",
+    "description": "Extracted string opt_67"
+  },
+  "opt_68": {
+    "message": "[ES] Code \"Type de demande\" (Défaut : ISSUE)",
+    "description": "Extracted string opt_68"
+  },
+  "opt_69": {
+    "message": "[ES] Code \"Sévérité\" (Défaut : NORMAL)",
+    "description": "Extracted string opt_69"
+  },
+  "opt_70": {
+    "message": "[ES] Code \"Groupe du ticket\" (Optionnel ou requis selon conf)",
+    "description": "Extracted string opt_70"
+  },
+  "opt_71": {
+    "message": "[ES] Dictionnaire (Origines Opportunité)",
+    "description": "Extracted string opt_71"
+  },
+  "opt_72": {
+    "message": "[ES] ID : Label",
+    "description": "Extracted string opt_72"
+  },
+  "opt_73": {
+    "message": "[ES] 6 : Shop contact",
+    "description": "Extracted string opt_73"
+  },
+  "opt_74": {
+    "message": "[ES] Accueil > Configuration > Dictionnaires",
+    "description": "Extracted string opt_74"
+  },
+  "opt_75": {
+    "message": "[ES] Mettre à jour via l'API",
+    "description": "Extracted string opt_75"
+  },
+  "opt_76": {
+    "message": "[ES] Paramètres Opportunités/Projet",
+    "description": "Extracted string opt_76"
+  },
+  "opt_77": {
+    "message": "[ES] Forcer \"Suivre une opportunité\"",
+    "description": "Extracted string opt_77"
+  },
+  "opt_78": {
+    "message": "[ES] Cochez cette case pour lier automatiquement la création à une opportunité, et filtrer la liste récente sur ces dernières.",
+    "description": "Extracted string opt_78"
+  },
+  "opt_79": {
+    "message": "[ES] Interface par défaut",
+    "description": "Extracted string opt_79"
+  },
+  "opt_80": {
+    "message": "[ES] Vue à l'ouverture de l'extension",
+    "description": "Extracted string opt_80"
+  },
+  "opt_81": {
+    "message": "[ES] Ticket",
+    "description": "Extracted string opt_81"
+  },
+  "opt_82": {
+    "message": "[ES] Opportunité",
+    "description": "Extracted string opt_82"
+  },
+  "opt_83": {
+    "message": "[ES] Nombre maximum de tickets récents à afficher",
+    "description": "Extracted string opt_83"
+  },
+  "opt_84": {
+    "message": "[ES] Capture d'écran",
+    "description": "Extracted string opt_84"
+  },
+  "opt_85": {
+    "message": "[ES] Format de l'image",
+    "description": "Extracted string opt_85"
+  },
+  "opt_86": {
+    "message": "[ES] PNG",
+    "description": "Extracted string opt_86"
+  },
+  "opt_87": {
+    "message": "[ES] Qualité Max (0% comp.)",
+    "description": "Extracted string opt_87"
+  },
+  "opt_88": {
+    "message": "[ES] JPG",
+    "description": "Extracted string opt_88"
+  },
+  "opt_89": {
+    "message": "[ES] Léger (15% comp.)",
+    "description": "Extracted string opt_89"
+  },
+  "opt_90": {
+    "message": "[ES] Intensité du floutage des captures",
+    "description": "Extracted string opt_90"
+  },
+  "opt_91": {
+    "message": "[ES] Léger (Min)",
+    "description": "Extracted string opt_91"
+  },
+  "opt_92": {
+    "message": "[ES] 8px",
+    "description": "Extracted string opt_92"
+  },
+  "opt_93": {
+    "message": "[ES] Fort (Max)",
+    "description": "Extracted string opt_93"
+  },
+  "opt_94": {
+    "message": "[ES] Texte confidentiel",
+    "description": "Extracted string opt_94"
+  },
+  "opt_95": {
+    "message": "[ES] contact@exmple.com",
+    "description": "Extracted string opt_95"
+  },
+  "opt_title_96": {
+    "message": "[ES] Créer un nouveau profil",
+    "description": "Extracted string opt_title_96"
+  },
+  "opt_title_97": {
+    "message": "[ES] Sauvegarder la configuration",
+    "description": "Extracted string opt_title_97"
+  },
+  "opt_title_98": {
+    "message": "[ES] Tester la connexion API",
+    "description": "Extracted string opt_title_98"
+  },
+  "opt_title_99": {
+    "message": "[ES] Supprimer ce profil",
+    "description": "Extracted string opt_title_99"
+  },
+  "opt_title_100": {
+    "message": "[ES] Récupérer depuis l'API Dolibarr",
+    "description": "Extracted string opt_title_100"
+  },
+  "opt_ph_101": {
+    "message": "[ES] Nom pour ce profil",
+    "description": "Extracted string opt_ph_101"
+  },
+  "opt_ph_102": {
+    "message": "[ES] Votre identifiant",
+    "description": "Extracted string opt_ph_102"
+  },
+  "opt_ph_103": {
+    "message": "[ES] Votre mot de passe ou clé API",
+    "description": "Extracted string opt_ph_103"
+  },
+  "opt_ph_104": {
+    "message": "[ES] Laisser vide pour l'entité par défaut",
+    "description": "Extracted string opt_ph_104"
+  },
+  "opt_ph_105": {
+    "message": "[ES] ISSUE",
+    "description": "Extracted string opt_ph_105"
+  },
+  "opt_ph_106": {
+    "message": "[ES] NORMAL",
+    "description": "Extracted string opt_ph_106"
+  },
+  "opt_ph_107": {
+    "message": "[ES] Code (ex: OTHER)",
+    "description": "Extracted string opt_ph_107"
+  },
+  "opt_ph_108": {
+    "message": "[ES] 1 : Appel entrant&#10;6 : Shop contact",
+    "description": "Extracted string opt_ph_108"
+  },
+  "opt_ph_109": {
+    "message": "[ES] Ex: 10",
+    "description": "Extracted string opt_ph_109"
+  },
+  "popup_js_110": {
+    "message": "[ES] Aucun résultat...",
+    "description": "Extracted string popup_js_110"
+  },
+  "popup_js_111": {
+    "message": "[ES] Créer le ticket",
+    "description": "Extracted string popup_js_111"
+  },
+  "popup_js_112": {
+    "message": "[ES] Créer l\\",
+    "description": "Extracted string popup_js_112"
+  },
+  "popup_js_113": {
+    "message": "[ES] (${drop.proba}%)",
+    "description": "Extracted string popup_js_113"
+  },
+  "popup_js_114": {
+    "message": "[ES] (${localItems.doliPrefillOppProba}%)",
+    "description": "Extracted string popup_js_114"
+  },
+  "popup_js_115": {
+    "message": "[ES] (${probaInput.value}%)",
+    "description": "Extracted string popup_js_115"
+  },
+  "popup_js_116": {
+    "message": "[ES] Création Opportunité...",
+    "description": "Extracted string popup_js_116"
+  },
+  "popup_js_117": {
+    "message": "[ES] Projet créé...",
+    "description": "Extracted string popup_js_117"
+  },
+  "popup_js_118": {
+    "message": "[ES] Contact affecté...",
+    "description": "Extracted string popup_js_118"
+  },
+  "popup_js_119": {
+    "message": "[ES] Erreur réseau Contact...",
+    "description": "Extracted string popup_js_119"
+  },
+  "popup_js_120": {
+    "message": "[ES] Envoi Pièce jointe...",
+    "description": "Extracted string popup_js_120"
+  },
+  "popup_js_121": {
+    "message": "[ES] Opportunité créée !",
+    "description": "Extracted string popup_js_121"
+  },
+  "popup_js_122": {
+    "message": "[ES] Réessayer",
+    "description": "Extracted string popup_js_122"
+  },
+  "popup_js_123": {
+    "message": "[ES] Création du ticket...",
+    "description": "Extracted string popup_js_123"
+  },
+  "popup_js_124": {
+    "message": "[ES] Envoi de la pièce jointe...",
+    "description": "Extracted string popup_js_124"
+  },
+  "popup_js_125": {
+    "message": "[ES] Ticket créé !",
+    "description": "Extracted string popup_js_125"
+  },
+  "popup_js_126": {
+    "message": "[ES] Réessayer",
+    "description": "Extracted string popup_js_126"
+  },
+  "popup_js_127": {
+    "message": "[ES] Réessayer",
+    "description": "Extracted string popup_js_127"
+  },
+  "popup_js_128": {
+    "message": "[ES] Capture...",
+    "description": "Extracted string popup_js_128"
+  },
+  "popup_js_129": {
+    "message": "[ES] Erreur capture (Permissions ?): ",
+    "description": "Extracted string popup_js_129"
+  },
+  "popup_js_130": {
+    "message": "[ES] Erreur: Impossible de trouver l'onglet actif.",
+    "description": "Extracted string popup_js_130"
+  },
+  "popup_js_131": {
+    "message": "[ES] Bug critique capture: ",
+    "description": "Extracted string popup_js_131"
+  },
+  "popup_js_132": {
+    "message": "[ES] Erreur Capture",
+    "description": "Extracted string popup_js_132"
+  },
+  "popup_js_133": {
+    "message": "[ES] Copié !",
+    "description": "Extracted string popup_js_133"
+  },
+  "popup_jsph_134": {
+    "message": "[ES] Rechercher...",
+    "description": "Extracted string popup_jsph_134"
+  },
+  "opt_js_135": {
+    "message": "[ES] Please fill in the URL, the login and the password before testing.",
+    "description": "Extracted string opt_js_135"
+  },
+  "opt_js_136": {
+    "message": "[ES] Test en cours...",
+    "description": "Extracted string opt_js_136"
+  },
+  "opt_js_137": {
+    "message": "[ES] ❌ Échec de la connexion.",
+    "description": "Extracted string opt_js_137"
+  },
+  "opt_js_138": {
+    "message": "[ES] 🔌 Tester",
+    "description": "Extracted string opt_js_138"
+  },
+  "opt_js_139": {
+    "message": "[ES] Veuillez d'abord Tester et Enregistrer votre connexion haut-dessus.",
+    "description": "Extracted string opt_js_139"
+  },
+  "opt_js_140": {
+    "message": "[ES] Récupération en cours...",
+    "description": "Extracted string opt_js_140"
+  },
+  "opt_js_141": {
+    "message": "[ES] API verrouillée (404/403). Le dictionnaire standard Dolibarr par défaut a été rempli. Pensez à Enregistrer !",
+    "description": "Extracted string opt_js_141"
+  },
+  "opt_js_142": {
+    "message": "[ES] Dictionnaire mis à jour ! Pensez à Enregistrer de nouveau le profil en haut pour valider.",
+    "description": "Extracted string opt_js_142"
+  },
+  "opt_js_143": {
+    "message": "[ES] Veuillez remplir tous les champs obligatoires (URL, Login, Mot de passe).",
+    "description": "Extracted string opt_js_143"
+  },
+  "opt_js_144": {
+    "message": "[ES] Sauvegarde en cours...",
+    "description": "Extracted string opt_js_144"
+  },
+  "opt_js_145": {
+    "message": "[ES] ✅ Paramètres sauvegardés avec succès !",
+    "description": "Extracted string opt_js_145"
+  },
+  "opt_js_146": {
+    "message": "[ES] Enregistrer",
+    "description": "Extracted string opt_js_146"
+  },
+  "error_permission_denied": {
+    "message": "Atención: Permiso del navegador denegado. La API puede estar bloqueada.",
+    "description": "Avertissement affiché si l'utilisateur refuse la permission host_permissions lors de la configuration du CRM."
+  },
+  "editor_crop": {
+    "message": "Recortar"
+  },
+  "editor_draw": {
+    "message": "Dibujar"
+  },
+  "editor_arrow": {
+    "message": "Flecha"
+  },
+  "editor_text": {
+    "message": "Texto"
+  },
+  "editor_box": {
+    "message": "Marco"
+  },
+  "editor_blur": {
+    "message": "Desenfocar"
+  },
+  "editor_bullet": {
+    "message": "Viñeta"
+  },
+  "editor_color_label": {
+    "message": "Color"
+  },
+  "editor_size_label": {
+    "message": "Grosor"
+  },
+  "editor_save_btn": {
+    "message": "Confirmar"
+  },
+  "editor_cancel_btn": {
+    "message": "Cancelar"
+  },
+  "editor_settings_title": {
+    "message": "Abrir configuración"
+  },
+  "error_2003": {
+    "message": "Falta el logotipo de su Dolibarr"
+  },
+  "btn_fix_logo": {
+    "message": "Haga clic aquí para añadirlo"
+  },
+  "onboarding_title": {
+    "message": "Bienvenido a ReedCRM"
+  },
+  "onboarding_desc": {
+    "message": "Conecte su navegador a Dolibarr para gestionar oportunidades, tickets y tiempos en un clic."
+  },
+  "onboarding_link_site": {
+    "message": "Sitio ReedCRM"
+  },
+  "onboarding_link_store": {
+    "message": "Módulo DoliStore"
+  },
+  "onboarding_link_doc": {
+    "message": "Documentación"
+  },
+  "onboarding_form_title": {
+    "message": "Primera conexión a Dolibarr"
+  },
+  "onboarding_url_label": {
+    "message": "Enlace a su Dolibarr"
+  },
+  "onboarding_url_ph": {
+    "message": "https://su-dolibarr.com"
+  },
+  "onboarding_url_hint": {
+    "message": "Ingrese la dirección de su Dolibarr (la API se detectará automáticamente)."
+  },
+  "onboarding_open_doli": {
+    "message": "Abrir mi Dolibarr ↗"
+  },
+  "onboarding_btn_connect": {
+    "message": "Probar y conectar"
+  },
+  "onboarding_btn_advanced": {
+    "message": "Configuración avanzada"
+  },
+  "opt_default_mode_label": {
+    "message": "Vista predeterminada al abrir"
+  },
+  "std_planned_time_title": {
+    "message": "Tiempo previsto"
+  },
+  "std_spent_time_title": {
+    "message": "Tiempo dedicado"
+  },
+  "opt_auto_create_spj_label": {
+    "message": "Crear y preseleccionar automáticamente la tarea SPJ_[Título del proyecto] si no existe"
+  },
+  "opt_require_note_label": {
+    "message": "Hacer obligatorio el campo Nota / Comentario"
+  },
+  "std_create_spj_btn_title": {
+    "message": "Crear tarea predeterminada SPJ_"
+  },
+  "std_spj_already_exists_title": {
+    "message": "La tarea SPJ_ ya existe en este proyecto"
+  },
+  "std_spj_create_error": {
+    "message": "Error al crear la tarea SPJ_"
+  },
+  "time_standard_project": {
+    "message": "Proyecto"
+  },
+  "time_hr_mode": {
+    "message": "Semana"
+  },
+  "time_monthly_mode": {
+    "message": "Mensual"
+  }
 }

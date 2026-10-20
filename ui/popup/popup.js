@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const profileSwitcher = document.getElementById('doli-active-profile');
-            if (profiles.length > 1 && profileSwitcher) {
+            if (profiles.length >= 1 && profileSwitcher) {
                 profileSwitcher.classList.remove('hidden');
                 profileSwitcher.innerHTML = '';
                 profiles.forEach(prof => {

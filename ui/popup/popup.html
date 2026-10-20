@@ -9,14 +9,19 @@
 <body>
     <div class="container">
         <div class="top-nav">
-            <div class="nav-logo" style="display: flex; align-items: center; gap: 10px;">
+            <div class="nav-logo" style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
                 <div class="profile-switcher-wrapper" style="position: relative; display: flex; align-items: center;">
                     <img id="nav-favicon" src="" style="position: absolute; left: 8px; width: 14px; height: 14px; pointer-events: none; display: none;">
                     <select id="doli-active-profile" class="profile-switcher hidden">
                         <!-- Rempli dynamiquement en JS -->
                     </select>
                 </div>
-                <span style="font-size: 14px; font-weight: 700; color: #0f172a;" data-i18n="popup_title_timesheet">Pointage Temps</span>
+                <div class="entity-switcher-wrapper" style="position: relative; display: flex; align-items: center;">
+                    <select id="doli-active-entity" class="profile-switcher entity-switcher hidden" title="Entité / Société">
+                        <!-- Rempli dynamiquement en JS -->
+                    </select>
+                </div>
+                <span style="font-size: 13.5px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" data-i18n="popup_title_timesheet">Pointage Temps</span>
             </div>
             <div class="nav-tabs">
                 <button class="nav-tab" id="btn-top-options" data-i18n-title="editor_settings_title" style="padding: 6px 8px;">
@@ -120,12 +125,16 @@
                 <!-- TABS MODE : Projet Standard | Présence/Absence -->
                 <div class="ts-mode-tabs">
                     <button type="button" id="btn-mode-standard" class="ts-tab-btn">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        <span data-i18n="time_standard_project">Projet Standard</span>
+                        <svg width="15" height="14" viewBox="0 0 640 512" fill="currentColor" style="flex-shrink:0;"><path d="M384 320H256c-17.67 0-32 14.33-32 32v128c0 17.67 14.33 32 32 32h128c17.67 0 32-14.33 32-32V352c0-17.67-14.33-32-32-32zM192 32c0-17.67-14.33-32-32-32H32C14.33 0 0 14.33 0 32v128c0 17.67 14.33 32 32 32h95.72l73.16 128.04C211.98 300.98 232.4 288 256 288h.28L192 175.51V128h224V64H192V32zM608 0H480c-17.67 0-32 14.33-32 32v128c0 17.67 14.33 32 32 32h128c17.67 0 32-14.33 32-32V32c0-17.67-14.33-32-32-32z"/></svg>
+                        <span data-i18n="time_standard_project">Projet</span>
                     </button>
                     <button type="button" id="btn-mode-rh" class="ts-tab-btn ts-tab-active">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        <span data-i18n="time_hr_mode">Présence / Absence</span>
+                        <span data-i18n="time_hr_mode">Semaine</span>
+                    </button>
+                    <button type="button" id="btn-mode-monthly" class="ts-tab-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span data-i18n="time_monthly_mode">Mensuel</span>
                     </button>
                 </div>
 
@@ -181,6 +190,27 @@
                 </div>
 
                 <!-- ═══════════════════════ MODE STANDARD ═══════════════════════ -->
+                <div id="timesheet-mode-monthly" class="hidden">
+                    <div class="ts-cal-header">
+                        <button type="button" class="ts-week-arrow" id="ts-cal-prev" title="Mois précédent">&#8249;</button>
+                        <div class="ts-cal-title-block">
+                            <span id="ts-cal-month-title" class="ts-cal-month-title">—</span>
+                            <span id="ts-cal-month-summary" class="ts-cal-month-summary"></span>
+                        </div>
+                        <button type="button" class="ts-week-arrow" id="ts-cal-next" title="Mois suivant">&#8250;</button>
+                    </div>
+                    <div class="ts-cal-legend">
+                        <span class="ts-cal-legend-item"><span class="ts-cal-dot is-ok"></span>OK</span>
+                        <span class="ts-cal-legend-item"><span class="ts-cal-dot is-ko"></span>Manque</span>
+                        <span class="ts-cal-legend-item"><span class="ts-cal-dot is-grey"></span>À venir / 0h</span>
+                        <span class="ts-cal-legend-item"><span class="ts-cal-badge-sample is-p">P</span>Présent</span>
+                        <span class="ts-cal-legend-item"><span class="ts-cal-badge-sample is-a">A</span>Absent</span>
+                    </div>
+                    <div id="ts-cal-grid" class="ts-cal-grid">
+                        <!-- Semaines generees en JS -->
+                    </div>
+                </div>
+
                 <div id="timesheet-mode-standard" class="hidden" style="margin-top:10px;">
                     <div class="form-group">
                         <label for="time-project" class="std-label-with-stats">
@@ -194,10 +224,15 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="time-task" class="std-label-with-stats">
-                            <span data-i18n="time_task">Tâche</span>
-                            <span id="std-task-stats" class="std-inline-stats hidden"></span>
-                        </label>
+                        <div class="std-task-header-row">
+                            <label for="time-task" class="std-label-with-stats" style="margin-bottom:0;flex:1;">
+                                <span data-i18n="time_task">Tâche</span>
+                                <span id="std-task-stats" class="std-inline-stats hidden"></span>
+                            </label>
+                            <button type="button" id="btn-create-spj-task" class="std-create-spj-btn" data-i18n-title="std_create_spj_btn_title" title="Créer la tâche par défaut SPJ_" disabled>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                        </div>
                         <div class="searchable-select-container" style="min-width:0;">
                             <select id="time-task" class="searchable-select hidden" disabled>
                                 <option value=""><span data-i18n="time_select_task">Sélectionner une tâche</span></option>

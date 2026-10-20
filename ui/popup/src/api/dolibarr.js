@@ -22,12 +22,13 @@ export async function fetchDoli(url, options = {}) {
     } catch(e) {}
 
     apiKey = options.headers?.DOLAPIKEY || options.headers?.['DOLAPIKEY'];
+    const entity = options.headers?.DOLAPIENTITY || options.headers?.['DOLAPIENTITY'] || '';
 
     // Promesse principale via messagerie SW
     const swPromise = new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
             type: MESSAGE_TYPES.API_CALL,
-            payload: { method, doliUrl, apiKey, endpoint, body }
+            payload: { method, doliUrl, apiKey, entity, endpoint, body }
         }, response => {
             if (chrome.runtime.lastError) {
                 return reject(new Error(chrome.runtime.lastError.message));
