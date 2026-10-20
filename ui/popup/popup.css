@@ -2534,3 +2534,216 @@ a.rt-ref:hover {
     color: #0f172a;
 }
 
+
+/* ===== MODE STANDARD : Champs Date, Durée & Note harmonisés ===== */
+#timesheet-mode-standard input[type="date"],
+#timesheet-mode-standard input[type="time"],
+#timesheet-mode-standard textarea {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #334155;
+    background-color: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#timesheet-mode-standard input[type="date"]:hover,
+#timesheet-mode-standard input[type="time"]:hover,
+#timesheet-mode-standard textarea:hover {
+    border-color: #94a3b8;
+}
+
+#timesheet-mode-standard input[type="date"]:focus,
+#timesheet-mode-standard input[type="time"]:focus,
+#timesheet-mode-standard textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+#timesheet-mode-standard input[type="date"]::-webkit-calendar-picker-indicator,
+#timesheet-mode-standard input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+#timesheet-mode-standard input[type="date"]::-webkit-calendar-picker-indicator:hover,
+#timesheet-mode-standard input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+.std-label-with-stats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.std-inline-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #475569;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+}
+
+.std-inline-stats .std-stat-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #334155;
+    font-weight: 600;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.std-inline-stats .std-stat-sep {
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.std-inline-stats .std-stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    color: #475569;
+    font-weight: 600;
+}
+
+.std-inline-stats .std-stat-item svg {
+    flex-shrink: 0;
+    color: #3b82f6;
+}
+
+.std-inline-stats .std-stat-item.is-spent svg {
+    color: #10b981;
+}
+.std-note-action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.std-save-disk-btn {
+    width: 44px;
+    height: 44px;
+    background-color: #0259a8;
+    color: #ffffff;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.std-save-disk-btn:hover:not(:disabled) {
+    background-color: #22c55e;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.3);
+}
+
+.std-save-disk-btn:disabled {
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+/* ===== HISTORIQUE TEMPS PROJET STANDARD ===== */
+.std-project-history {
+    margin-top: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    max-height: 185px;
+    overflow-y: auto;
+    divide-y: 1px solid #f1f5f9;
+}
+
+.std-hist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.15s;
+}
+
+.std-hist-item:last-child {
+    border-bottom: none;
+}
+
+.std-hist-item:hover {
+    background-color: #f8fafc;
+}
+
+.std-hist-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.std-hist-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    min-width: 0;
+}
+
+.std-hist-id {
+    font-weight: 700;
+    color: #0259a8;
+}
+
+.std-hist-sep {
+    color: #cbd5e1;
+    font-weight: 400;
+}
+
+.std-hist-date {
+    color: #475569;
+    font-weight: 500;
+}
+
+.std-hist-user {
+    font-weight: 700;
+    color: #1e40af;
+    background: #eff6ff;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 10.5px;
+}
+
+.std-hist-dur {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.std-hist-note {
+    font-size: 11.5px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}

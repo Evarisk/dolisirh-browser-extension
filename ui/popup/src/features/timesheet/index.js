@@ -11,6 +11,124 @@ let selectedHrTask = null;
 let isTimesheetInitialized = false;
 let selectedDate = new Date(); // date courante sélectionnée dans le picker
 let globalCurrentUserId = null;
+let globalCurrentUserInitials = '';
+let usersInitialsMap = {};
+let standardProjectsMap = {};
+let standardTasksMap = {};
+
+/**
+ * Extrait les initiales sur 2 lettres d'un objet utilisateur Dolibarr (ex: Laurent Mag -> LM).
+ * @param {Object} u
+ * @returns {string}
+ */
+function extractUserInitials(u) {
+    if (!u) return '';
+    const fn = (u.firstname || '').trim();
+    const ln = (u.lastname || '').trim();
+    if (fn && ln) return (fn[0] + ln[0]).toUpperCase();
+    if (fn) return fn.slice(0, 2).toUpperCase();
+    if (ln) return ln.slice(0, 2).toUpperCase();
+    if (u.login) return String(u.login).trim().slice(0, 2).toUpperCase();
+    return '';
+}
+
+/**
+ * Formate une durée en secondes au format HH:MM.
+ * @param {number|string} sec
+ * @returns {string}
+ */
+function formatSecToHHMM(sec) {
+    const total = Math.max(0, parseInt(sec, 10) || 0);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Crée une icône SVG (hourglass pour prévu, clock pour passé).
+ * @param {'planned'|'spent'} type
+ * @returns {SVGElement}
+ */
+function createStatIconSvg(type) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '12');
+    svg.setAttribute('height', '12');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    if (type === 'planned') {
+        const p1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p1.setAttribute('d', 'M5 22h14');
+        const p2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p2.setAttribute('d', 'M5 2h14');
+        const p3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p3.setAttribute('d', 'M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22');
+        const p4 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p4.setAttribute('d', 'M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2');
+        svg.appendChild(p1); svg.appendChild(p2); svg.appendChild(p3); svg.appendChild(p4);
+    } else {
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', '12'); c.setAttribute('cy', '12'); c.setAttribute('r', '10');
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        poly.setAttribute('points', '12 6 12 12 16 14');
+        svg.appendChild(c); svg.appendChild(poly);
+    }
+    return svg;
+}
+
+/**
+ * Affiche "- libellé | ⏳ Tps prévu | ⏱️ Tps passé" dans un conteneur inline.
+ * @param {HTMLElement|null} container
+ * @param {string} titleText
+ * @param {number} plannedSec
+ * @param {number} spentSec
+ */
+function renderInlineStats(container, titleText, plannedSec, spentSec) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!titleText && !plannedSec && !spentSec) {
+        container.classList.add('hidden');
+        return;
+    }
+    container.classList.remove('hidden');
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'std-stat-title';
+    titleSpan.textContent = `- ${titleText || ''}`;
+    titleSpan.title = titleText || '';
+    container.appendChild(titleSpan);
+
+    const sep1 = document.createElement('span');
+    sep1.className = 'std-stat-sep';
+    sep1.textContent = '|';
+    container.appendChild(sep1);
+
+    const plannedSpan = document.createElement('span');
+    plannedSpan.className = 'std-stat-item is-planned';
+    plannedSpan.title = chrome.i18n.getMessage('std_planned_time_title') || 'Temps prévu';
+    plannedSpan.appendChild(createStatIconSvg('planned'));
+    const plannedTxt = document.createElement('span');
+    plannedTxt.textContent = formatSecToHHMM(plannedSec);
+    plannedSpan.appendChild(plannedTxt);
+    container.appendChild(plannedSpan);
+
+    const sep2 = document.createElement('span');
+    sep2.className = 'std-stat-sep';
+    sep2.textContent = '|';
+    container.appendChild(sep2);
+
+    const spentSpan = document.createElement('span');
+    spentSpan.className = 'std-stat-item is-spent';
+    spentSpan.title = chrome.i18n.getMessage('std_spent_time_title') || 'Temps passé';
+    spentSpan.appendChild(createStatIconSvg('spent'));
+    const spentTxt = document.createElement('span');
+    spentTxt.textContent = formatSecToHHMM(spentSec);
+    spentSpan.appendChild(spentTxt);
+    container.appendChild(spentSpan);
+}
 
 // ─── Utilitaire : formate une date en YYYY-MM-DD ────────────────────────────
 function toLocalDateStr(d) {
@@ -80,9 +198,13 @@ function buildWeekPicker() {
 
         btn.addEventListener('click', () => {
             selectedDate = new Date(d);
-            // Synchronise l'input date caché
+            // Synchronise l'input date caché et l'input date standard
+            const dateStr = toLocalDateStr(selectedDate);
             const dateInput = document.getElementById('time-date');
-            if (dateInput) dateInput.value = toLocalDateStr(selectedDate);
+            if (dateInput) dateInput.value = dateStr;
+            const dateStdInput = document.getElementById('time-date-std');
+            if (dateStdInput) dateStdInput.value = dateStr;
+            checkSubmitStatus();
             // Met à jour la valeur par défaut des cartes pour ce nouveau jour
             updateCardsDefaultTime(DAY_KEYS[i]);
             buildWeekPicker(); // re-render pour mettre à jour active
@@ -430,6 +552,10 @@ export function initTimesheet(url, token, entity, profile) {
                 if (userRes.ok) {
                     const userInfo = await userRes.json();
                     globalCurrentUserId = String(userInfo.id || userInfo.rowid || '');
+                    globalCurrentUserInitials = extractUserInitials(userInfo);
+                    if (globalCurrentUserId && globalCurrentUserInitials) {
+                        usersInitialsMap[globalCurrentUserId] = globalCurrentUserInitials;
+                    }
                     updateDailyTimespentStats();
                 }
             } catch(_) {}
@@ -441,7 +567,8 @@ export function initTimesheet(url, token, entity, profile) {
     const setupContainer = document.getElementById('timesheet-setup-container');
     const mainContainer = document.getElementById('timesheet-main-container');
 
-    if (!profileConfig || !profileConfig.doliHrProject) {
+    const preferredMode = profileConfig?.doliDefaultMode || 'rh';
+    if ((!profileConfig || !profileConfig.doliHrProject) && preferredMode === 'rh') {
         if (setupContainer) setupContainer.classList.remove('hidden');
         if (mainContainer) mainContainer.classList.add('hidden');
         loadSetupProjects();
@@ -449,13 +576,20 @@ export function initTimesheet(url, token, entity, profile) {
         if (setupContainer) setupContainer.classList.add('hidden');
         if (mainContainer) mainContainer.classList.remove('hidden');
         loadStandardProjects();
-        buildHrUi();
+        if (profileConfig && profileConfig.doliHrProject) {
+            buildHrUi();
+        }
     }
 
     // Initialiser la date d'aujourd'hui
     selectedDate = new Date();
+    const todayStr = toLocalDateStr(selectedDate);
     const dateInput = document.getElementById('time-date');
-    if (dateInput) dateInput.value = toLocalDateStr(selectedDate);
+    if (dateInput) dateInput.value = todayStr;
+    const dateStdInput = document.getElementById('time-date-std');
+    if (dateStdInput) dateStdInput.value = todayStr;
+    const durationStdInput = document.getElementById('time-duration-std');
+    if (durationStdInput && !durationStdInput.value) durationStdInput.value = '00:15';
 
     // Construire le picker de semaine
     buildWeekPicker();
@@ -465,13 +599,17 @@ export function initTimesheet(url, token, entity, profile) {
     document.getElementById('ts-week-prev')?.addEventListener('click', () => {
         selectedDate.setDate(selectedDate.getDate() - 7);
         buildWeekPicker();
-        if (dateInput) dateInput.value = toLocalDateStr(selectedDate);
+        const dStr = toLocalDateStr(selectedDate);
+        if (dateInput) dateInput.value = dStr;
+        if (dateStdInput) dateStdInput.value = dStr;
         updateHrProjectInfo();
     });
     document.getElementById('ts-week-next')?.addEventListener('click', () => {
         selectedDate.setDate(selectedDate.getDate() + 7);
         buildWeekPicker();
-        if (dateInput) dateInput.value = toLocalDateStr(selectedDate);
+        const dStr = toLocalDateStr(selectedDate);
+        if (dateInput) dateInput.value = dStr;
+        if (dateStdInput) dateStdInput.value = dStr;
         updateHrProjectInfo();
     });
 
@@ -521,8 +659,9 @@ export function initTimesheet(url, token, entity, profile) {
         });
     }
 
-    // Activer le mode RH par défaut si configuré
-    if (profileConfig && profileConfig.doliHrProject) {
+    // Activer le mode configuré à l'ouverture (par défaut RH si projet RH configuré)
+    const defaultMode = profileConfig?.doliDefaultMode || 'rh';
+    if (defaultMode === 'rh' && profileConfig && profileConfig.doliHrProject) {
         currentMode = 'rh';
         btnRh?.classList.add('ts-tab-active');
         btnStandard?.classList.remove('ts-tab-active');
@@ -547,34 +686,82 @@ export function initTimesheet(url, token, entity, profile) {
     }
 
     const taskSelect = document.getElementById('time-task');
-    if (taskSelect) taskSelect.addEventListener('change', checkSubmitStatus);
+    if (taskSelect) {
+        taskSelect.addEventListener('change', (e) => {
+            updateSelectedTaskStats(e.target.value);
+            checkSubmitStatus();
+        });
+    }
 
-    const durationInput = document.getElementById('time-duration');
+    const durationInput = document.getElementById('time-duration-std') || document.getElementById('time-duration');
     if (durationInput) durationInput.addEventListener('input', checkSubmitStatus);
 
-    const btnSubmit = document.getElementById('btn-submit-time');
+    const noteStdInput = document.getElementById('time-note-std');
+    if (noteStdInput) noteStdInput.addEventListener('input', checkSubmitStatus);
+
+    const dateStdEl = document.getElementById('time-date-std');
+    if (dateStdEl) {
+        dateStdEl.addEventListener('input', () => {
+            if (dateStdEl.value) {
+                selectedDate = new Date(dateStdEl.value + 'T00:00:00');
+                const hiddenDate = document.getElementById('time-date');
+                if (hiddenDate) hiddenDate.value = dateStdEl.value;
+                buildWeekPicker();
+            }
+            checkSubmitStatus();
+        });
+    }
+
+    const btnSubmit = document.getElementById('btn-submit-time-std') || document.getElementById('btn-submit-time');
     if (btnSubmit) btnSubmit.addEventListener('click', submitTime);
 }
 
 
 function checkSubmitStatus() {
-    const btnSubmit = document.getElementById('btn-submit-time');
+    const btnSubmit = document.getElementById('btn-submit-time-std') || document.getElementById('btn-submit-time');
     if (!btnSubmit) return;
 
+    const requireNote = profileConfig?.doliRequireNote !== undefined ? Boolean(profileConfig.doliRequireNote) : true;
+    const reqStar = document.getElementById('std-note-req-star');
+    if (reqStar) {
+        reqStar.style.display = requireNote ? 'inline' : 'none';
+    }
+
     let isValid = false;
-    const duration = document.getElementById('time-duration')?.value;
-    const date = document.getElementById('time-date')?.value;
+    const duration = (document.getElementById('time-duration-std') || document.getElementById('time-duration'))?.value;
+    const date = (document.getElementById('time-date-std') || document.getElementById('time-date'))?.value;
+    const noteVal = (document.getElementById('time-note-std') || document.getElementById('time-note'))?.value?.trim() || '';
     
     if (duration && date) {
         if (currentMode === 'standard') {
             const task = document.getElementById('time-task')?.value;
-            if (task && task !== '') isValid = true;
+            const noteOk = !requireNote || noteVal.length > 0;
+            if (task && task !== '' && noteOk) isValid = true;
         } else {
             if (selectedHrTask) isValid = true;
         }
     }
 
     btnSubmit.disabled = !isValid;
+}
+
+/**
+ * Met à jour les statistiques inline de la tâche sélectionnée.
+ * @param {string|number} taskId
+ */
+function updateSelectedTaskStats(taskId) {
+    const taskStatsEl = document.getElementById('std-task-stats');
+    if (!taskId || !standardTasksMap[String(taskId)]) {
+        if (taskStatsEl) {
+            taskStatsEl.innerHTML = '';
+            taskStatsEl.classList.add('hidden');
+        }
+        return;
+    }
+    const t = standardTasksMap[String(taskId)];
+    const planned = parseInt(t.planned_workload || 0, 10);
+    const spent = parseInt(t.duration_effective || 0, 10);
+    renderInlineStats(taskStatsEl, t.label || t.ref || '', planned, spent);
 }
 
 async function loadStandardProjects() {
@@ -588,8 +775,10 @@ async function loadStandardProjects() {
         const res = await fetchDoli(`${doliUrl}/projects?limit=10000&status=1&sortfield=t.rowid&sortorder=DESC`, { headers });
         if (res.ok) {
             const projects = await res.json();
+            standardProjectsMap = {};
             if (Array.isArray(projects)) {
                 projects.forEach(p => {
+                    standardProjectsMap[String(p.id)] = p;
                     const opt = document.createElement('option');
                     opt.value = p.id;
                     opt.textContent = `${p.ref} - ${p.title}`;
@@ -609,35 +798,136 @@ async function loadStandardProjects() {
     }
 }
 
+/**
+ * Crée à la volée la tâche SPJ_<libellé du projet> dans Dolibarr si le projet n'a aucune tâche.
+ * @param {string|number} projectId
+ * @param {string} spjLabel
+ * @param {Object} headers
+ * @returns {Promise<Object|null>}
+ */
+async function createDefaultSpjTask(projectId, spjLabel, headers) {
+    try {
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const rand = String(Math.floor(1000 + Math.random() * 9000));
+        const fallbackRef = `TK${yy}${mm}-${rand}`;
+
+        const postHeaders = { ...headers, 'Content-Type': 'application/json' };
+        const createRes = await fetchDoli(`${doliUrl}/tasks`, {
+            method: 'POST',
+            headers: postHeaders,
+            body: JSON.stringify({
+                fk_project: parseInt(projectId, 10),
+                fk_projet: parseInt(projectId, 10),
+                ref: fallbackRef,
+                label: spjLabel,
+                date_start: Math.floor(now.getTime() / 1000),
+                progress: 0
+            })
+        });
+
+        if (createRes.ok) {
+            const newIdRaw = await createRes.json();
+            const newId = (newIdRaw && typeof newIdRaw === 'object') ? (newIdRaw.id || newIdRaw.rowid) : newIdRaw;
+            if (newId) {
+                const detailRes = await fetchDoli(`${doliUrl}/tasks/${newId}`, { headers });
+                if (detailRes.ok) {
+                    const detailData = await detailRes.json();
+                    if (detailData && detailData.id) return detailData;
+                }
+                return { id: String(newId), ref: fallbackRef, label: spjLabel, planned_workload: 0, duration_effective: 0 };
+            }
+        }
+    } catch (err) {
+        console.warn('Erreur création automatique tâche SPJ:', err);
+    }
+    return null;
+}
+
 async function loadStandardTasks(projectId) {
     const select = document.getElementById('time-task');
+    const projStatsEl = document.getElementById('std-project-stats');
+    const taskStatsEl = document.getElementById('std-task-stats');
     if (!select) return;
 
     select.innerHTML = '<option value="">Sélectionner une tâche</option>';
     select.disabled = true;
+    standardTasksMap = {};
+    if (taskStatsEl) {
+        taskStatsEl.innerHTML = '';
+        taskStatsEl.classList.add('hidden');
+    }
 
     if (!projectId) {
+        if (projStatsEl) {
+            projStatsEl.innerHTML = '';
+            projStatsEl.classList.add('hidden');
+        }
+        const projHistEl = document.getElementById('std-project-history');
+        if (projHistEl) {
+            projHistEl.innerHTML = '';
+            projHistEl.classList.add('hidden');
+        }
         if (window.timeTaskSelect) window.timeTaskSelect.update();
+        checkSubmitStatus();
         return;
     }
 
     const headers = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
     if (doliEntity) headers['DOLAPIENTITY'] = doliEntity;
 
+    const proj = standardProjectsMap[String(projectId)];
+    const projTitle = proj ? (proj.title || proj.ref || '') : '';
+    const spjTargetLabel = `SPJ_${projTitle}`;
+    const autoCreateEnabled = profileConfig?.doliAutoCreateSpjTask !== undefined ? Boolean(profileConfig.doliAutoCreateSpjTask) : true;
+
     try {
         const res = await fetchDoli(`${doliUrl}/tasks?sqlfilters=(t.fk_projet:=:${projectId})&limit=100`, { headers });
+        let tasks = [];
         if (res.ok) {
-            const tasks = await res.json();
-            if (Array.isArray(tasks)) {
-                tasks.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t.id;
-                    opt.textContent = `${t.ref} - ${t.label}`;
-                    select.appendChild(opt);
-                });
-                select.disabled = false;
+            const data = await res.json();
+            if (Array.isArray(data)) tasks = data;
+        }
+
+        // S'il n'y a aucune tâche et que l'option est activée, création à la volée de SPJ_<libellé du projet>
+        if (tasks.length === 0 && autoCreateEnabled && projTitle) {
+            const createdTask = await createDefaultSpjTask(projectId, spjTargetLabel, headers);
+            if (createdTask) {
+                tasks = [createdTask];
             }
         }
+
+        let totalPlanned = 0;
+        let totalSpent = 0;
+        let preselectedTaskId = '';
+
+        if (tasks.length > 0) {
+            tasks.forEach(t => {
+                standardTasksMap[String(t.id)] = t;
+                totalPlanned += parseInt(t.planned_workload || 0, 10);
+                totalSpent += parseInt(t.duration_effective || 0, 10);
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `${t.ref ? t.ref + ' - ' : ''}${t.label}`;
+                const lbl = (t.label || '').trim();
+                if (!preselectedTaskId && (lbl.toLowerCase() === spjTargetLabel.toLowerCase() || lbl.toUpperCase().startsWith('SPJ_'))) {
+                    opt.selected = true;
+                    preselectedTaskId = String(t.id);
+                }
+                select.appendChild(opt);
+            });
+            select.disabled = false;
+            if (preselectedTaskId) {
+                select.value = preselectedTaskId;
+            }
+        }
+
+        renderInlineStats(projStatsEl, projTitle, totalPlanned, totalSpent);
+        if (preselectedTaskId) {
+            updateSelectedTaskStats(preselectedTaskId);
+        }
+        loadStandardProjectHistory();
     } catch(e) {
         console.error('Error fetching standard tasks', e);
     }
@@ -646,6 +936,156 @@ async function loadStandardTasks(projectId) {
         window.timeTaskSelect = new CustomSelect(select);
     } else {
         window.timeTaskSelect.update();
+    }
+    checkSubmitStatus();
+}
+
+/**
+ * Charge et affiche l'historique des temps consommes du projet selectionne sous le formulaire Standard.
+ * Format par entree :
+ *   id|jj/mm/aa|LM|Duree
+ *   Note
+ * @returns {Promise<void>}
+ */
+async function loadStandardProjectHistory() {
+    const container = document.getElementById('std-project-history');
+    if (!container) return;
+
+    const tasks = Object.values(standardTasksMap);
+    if (tasks.length === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+
+    const headers = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
+    if (doliEntity) headers['DOLAPIENTITY'] = doliEntity;
+
+    try {
+        const allEntries = [];
+        await Promise.all(tasks.map(async (t) => {
+            try {
+                const res = await fetchDoli(`${doliUrl}/tasks/${t.id}?includetimespent=2`, { headers });
+                if (res.ok) {
+                    const taskData = await res.json();
+                    const lines = Array.isArray(taskData.lines) ? taskData.lines : [];
+                    lines.forEach(line => {
+                        allEntries.push({
+                            ...line,
+                            _taskId: t.id,
+                            _taskRef: t.ref || ''
+                        });
+                    });
+                }
+            } catch (_) {}
+        }));
+
+        if (allEntries.length === 0) {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            return;
+        }
+
+        // Resoudre les initiales des utilisateurs manquants
+        const missingUserIds = [...new Set(
+            allEntries
+                .map(e => String(e.timespent_line_fk_user || ''))
+                .filter(uid => uid && !usersInitialsMap[uid])
+        )];
+
+        if (missingUserIds.length > 0) {
+            await Promise.all(missingUserIds.map(async (uid) => {
+                try {
+                    const uRes = await fetchDoli(`${doliUrl}/users/${uid}`, { headers });
+                    if (uRes.ok) {
+                        const uData = await uRes.json();
+                        const init = extractUserInitials(uData);
+                        if (init) usersInitialsMap[uid] = init;
+                    }
+                } catch (_) {}
+            }));
+        }
+
+        // Tri du plus recent au plus ancien (date decroissante puis id decroissant)
+        allEntries.sort((a, b) => {
+            const tsA = parseInt(a.timespent_line_datehour || a.timespent_line_date || 0, 10);
+            const tsB = parseInt(b.timespent_line_datehour || b.timespent_line_date || 0, 10);
+            if (tsB !== tsA) return tsB - tsA;
+            const idA = parseInt(a.timespent_line_id || a.id || 0, 10);
+            const idB = parseInt(b.timespent_line_id || b.id || 0, 10);
+            return idB - idA;
+        });
+
+        container.innerHTML = '';
+        container.classList.remove('hidden');
+
+        allEntries.forEach(entry => {
+            const lineId = entry.timespent_line_id || entry.id || '';
+            const ts = parseInt(entry.timespent_line_datehour || entry.timespent_line_date || 0, 10);
+            let dateShort = '-';
+            if (ts > 0) {
+                const d = new Date(ts * 1000);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = String(d.getFullYear()).slice(-2);
+                dateShort = `${dd}/${mm}/${yy}`;
+            }
+
+            const uid = String(entry.timespent_line_fk_user || '');
+            const initials = usersInitialsMap[uid] || globalCurrentUserInitials || '-';
+            const durStr = formatSecToHHMM(entry.timespent_line_duration || 0);
+            const noteStr = (entry.timespent_line_note || '').trim();
+
+            const item = document.createElement('div');
+            item.className = 'std-hist-item';
+
+            // Ligne unique : jj/mm/aa|LM|Dur?e|Note
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'std-hist-meta';
+
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'std-hist-date';
+            dateSpan.textContent = dateShort;
+
+            const sep1 = document.createElement('span');
+            sep1.className = 'std-hist-sep';
+            sep1.textContent = '|';
+
+            const userSpan = document.createElement('span');
+            userSpan.className = 'std-hist-user';
+            userSpan.textContent = initials;
+
+            const sep2 = document.createElement('span');
+            sep2.className = 'std-hist-sep';
+            sep2.textContent = '|';
+
+            const durSpan = document.createElement('span');
+            durSpan.className = 'std-hist-dur';
+            durSpan.textContent = durStr;
+
+            const sep3 = document.createElement('span');
+            sep3.className = 'std-hist-sep';
+            sep3.textContent = '|';
+
+            const noteSpan = document.createElement('span');
+            noteSpan.className = 'std-hist-note';
+            noteSpan.textContent = noteStr || '-';
+            if (noteStr) noteSpan.title = noteStr;
+
+            metaDiv.appendChild(dateSpan);
+            metaDiv.appendChild(sep1);
+            metaDiv.appendChild(userSpan);
+            metaDiv.appendChild(sep2);
+            metaDiv.appendChild(durSpan);
+            metaDiv.appendChild(sep3);
+            metaDiv.appendChild(noteSpan);
+
+            item.appendChild(metaDiv);
+
+            container.appendChild(item);
+        });
+    } catch (err) {
+        console.warn('Erreur chargement historique projet standard:', err);
     }
 }
 
@@ -991,11 +1431,12 @@ function createHrCard(taskId, ref, label, type) {
 
 
 async function submitTime() {
-    const btn = document.getElementById('btn-submit-time');
-    const statusDiv = document.getElementById('time-status');
-    const date = document.getElementById('time-date').value;
-    const duration = document.getElementById('time-duration').value;
-    const note = document.getElementById('time-note').value;
+    const btn = document.getElementById('btn-submit-time-std') || document.getElementById('btn-submit-time');
+    const statusDiv = document.getElementById('time-status-std') || document.getElementById('time-status');
+    const date = (document.getElementById('time-date-std') || document.getElementById('time-date'))?.value;
+    const duration = (document.getElementById('time-duration-std') || document.getElementById('time-duration'))?.value;
+    const noteEl = document.getElementById('time-note-std') || document.getElementById('time-note');
+    const note = noteEl ? noteEl.value : '';
     
     let taskId = null;
     if (currentMode === 'standard') {
@@ -1047,11 +1488,26 @@ async function submitTime() {
         if (res.ok) {
             statusDiv.style.color = '#2ecc71';
             statusDiv.textContent = 'Temps enregistré avec succès !';
+            if (currentMode === 'standard' && taskId && standardTasksMap[String(taskId)]) {
+                standardTasksMap[String(taskId)].duration_effective = (parseInt(standardTasksMap[String(taskId)].duration_effective || 0, 10)) + durationInSeconds;
+                updateSelectedTaskStats(taskId);
+                const projId = document.getElementById('time-project')?.value;
+                if (projId) {
+                    let pPlanned = 0, pSpent = 0;
+                    Object.values(standardTasksMap).forEach(tk => {
+                        pPlanned += parseInt(tk.planned_workload || 0, 10);
+                        pSpent += parseInt(tk.duration_effective || 0, 10);
+                    });
+                    const proj = standardProjectsMap[String(projId)];
+                    renderInlineStats(document.getElementById('std-project-stats'), proj ? (proj.title || proj.ref || '') : '', pPlanned, pSpent);
+                }
+                loadStandardProjectHistory();
+            }
             updateDailyTimespentStats(); // Recalcul des totaux après ajout
             setTimeout(() => {
                 statusDiv.textContent = '';
-                document.getElementById('time-note').value = '';
-                btn.disabled = false;
+                if (noteEl) noteEl.value = '';
+                checkSubmitStatus();
             }, 3000);
         } else {
             statusDiv.style.color = '#e74c3c';

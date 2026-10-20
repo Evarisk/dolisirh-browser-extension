@@ -10,7 +10,7 @@
 <body>
     <div class="options-container">
         <div class="header">
-            <img src="icon32.png" alt="Logo" class="logo">
+            <img src="../../icon32.png" alt="Logo" class="logo">
             <h2>Options Extension DoliSIRH</h2>
         </div>
 
@@ -74,6 +74,38 @@
             <legend><span data-i18n="opt_pointage_rh"></span></legend>
             <p style="font-size: 11px; color: #7f8c8d; margin-bottom: 10px; margin-top: 0;"><span data-i18n="opt_pointage_desc"></span></p>
             
+            <div class="form-group">
+                <label><span data-i18n="opt_default_mode_label">Vue à l'ouverture</span></label>
+                <div class="format-selection">
+                    <label class="format-option">
+                        <input type="radio" name="doli-default-mode" id="doli-default-mode-standard" value="standard">
+                        <div class="format-card" style="padding: 8px 6px;">
+                            <span class="format-title" style="font-size: 13px; margin-bottom: 0;" data-i18n="time_standard_project">Projet Standard</span>
+                        </div>
+                    </label>
+                    <label class="format-option">
+                        <input type="radio" name="doli-default-mode" id="doli-default-mode-rh" value="rh" checked>
+                        <div class="format-card" style="padding: 8px 6px;">
+                            <span class="format-title" style="font-size: 13px; margin-bottom: 0;" data-i18n="time_hr_mode">Présence / Absence</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: 500; font-size: 12.5px; color: #334155; margin-bottom: 0;">
+                    <input type="checkbox" id="doli-auto-create-spj" checked style="width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; accent-color: #3498db; cursor: pointer;">
+                    <span data-i18n="opt_auto_create_spj_label">Créer et présélectionner automatiquement la tâche SPJ_[Libellé du projet] s'il n'y a pas de tâche</span>
+                </label>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: 500; font-size: 12.5px; color: #334155; margin-bottom: 0;">
+                    <input type="checkbox" id="doli-require-note" checked style="width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; accent-color: #3498db; cursor: pointer;">
+                    <span data-i18n="opt_require_note_label">Rendre le champ Note / Commentaire obligatoire</span>
+                </label>
+            </div>
+
             <div class="form-group">
                 <label for="doli-hr-project"><span data-i18n="opt_hr_project"></span></label>
                 <div class="searchable-select-container" style="width: 100%; margin-bottom: 8px;">
