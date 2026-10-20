@@ -79,33 +79,42 @@ const apiCall = async (url, options = {}, retries = 0) => {
 
 export const apiService = {
     /**
-     * @param {string} doliUrl 
-     * @param {string} apiKey 
-     * @param {string} endpoint 
+     * @param {string} doliUrl
+     * @param {string} apiKey
+     * @param {string} endpoint
+     * @param {string} [entity]
      */
-    get: async (doliUrl, apiKey, endpoint) => {
+    get: async (doliUrl, apiKey, endpoint, entity = '') => {
+        const headers = {
+            'DOLAPIKEY': apiKey,
+            'Accept': 'application/json'
+        };
+        if (entity && String(entity).trim() !== '') {
+            headers['DOLAPIENTITY'] = String(entity).trim();
+        }
         return await apiCall(`${doliUrl}/api/index.php${endpoint}`, {
             method: 'GET',
-            headers: {
-                'DOLAPIKEY': apiKey,
-                'Accept': 'application/json'
-            }
+            headers
         });
     },
 
     /**
-     * @param {string} doliUrl 
-     * @param {string} apiKey 
-     * @param {string} endpoint 
-     * @param {object} payload 
+     * @param {string} doliUrl
+     * @param {string} apiKey
+     * @param {string} endpoint
+     * @param {object} payload
+     * @param {string} [entity]
      */
-    post: async (doliUrl, apiKey, endpoint, payload) => {
+    post: async (doliUrl, apiKey, endpoint, payload, entity = '') => {
         const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         };
         if (apiKey) {
             headers['DOLAPIKEY'] = apiKey;
+        }
+        if (entity && String(entity).trim() !== '') {
+            headers['DOLAPIENTITY'] = String(entity).trim();
         }
         const fetchOpts = {
             method: 'POST',
@@ -118,48 +127,61 @@ export const apiService = {
     },
 
     /**
-     * @param {string} doliUrl 
-     * @param {string} apiKey 
-     * @param {string} endpoint 
-     * @param {object} payload 
+     * @param {string} doliUrl
+     * @param {string} apiKey
+     * @param {string} endpoint
+     * @param {object} payload
+     * @param {string} [entity]
      */
-    put: async (doliUrl, apiKey, endpoint, payload) => {
+    put: async (doliUrl, apiKey, endpoint, payload, entity = '') => {
+        const headers = {
+            'DOLAPIKEY': apiKey,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+        if (entity && String(entity).trim() !== '') {
+            headers['DOLAPIENTITY'] = String(entity).trim();
+        }
         return await apiCall(`${doliUrl}/api/index.php${endpoint}`, {
             method: 'PUT',
-            headers: {
-                'DOLAPIKEY': apiKey,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers,
             body: JSON.stringify(payload)
         });
     },
 
     /**
-     * @param {string} doliUrl 
-     * @param {string} apiKey 
-     * @param {string} endpoint 
+     * @param {string} doliUrl
+     * @param {string} apiKey
+     * @param {string} endpoint
+     * @param {string} [entity]
      */
-    del: async (doliUrl, apiKey, endpoint) => {
+    del: async (doliUrl, apiKey, endpoint, entity = '') => {
+        const headers = {
+            'DOLAPIKEY': apiKey,
+            'Accept': 'application/json'
+        };
+        if (entity && String(entity).trim() !== '') {
+            headers['DOLAPIENTITY'] = String(entity).trim();
+        }
         return await apiCall(`${doliUrl}/api/index.php${endpoint}`, {
             method: 'DELETE',
-            headers: {
-                'DOLAPIKEY': apiKey,
-                'Accept': 'application/json'
-            }
+            headers
         });
     },
 
     /**
-     * Utilitaire pour le téléversement de documents
+     * Utilitaire pour le t?l?versement de documents
      */
-    upload: async (doliUrl, apiKey, endpoint, formData) => {
-        // FormData gère son propre Content-Type
+    upload: async (doliUrl, apiKey, endpoint, formData, entity = '') => {
+        const headers = {
+            'DOLAPIKEY': apiKey
+        };
+        if (entity && String(entity).trim() !== '') {
+            headers['DOLAPIENTITY'] = String(entity).trim();
+        }
         return await apiCall(`${doliUrl}/api/index.php${endpoint}`, {
             method: 'POST',
-            headers: {
-                'DOLAPIKEY': apiKey
-            },
+            headers,
             body: formData
         });
     }

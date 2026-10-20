@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // ---- Gestion Centralisée des Fetch API (Règle 12) ----
     if (request.type === MESSAGE_TYPES.API_CALL) {
         const payload = request.payload || {};
-        const { method, doliUrl, apiKey, endpoint, body } = payload;
+        const { method, doliUrl, apiKey, entity, endpoint, body } = payload;
 
         if (!doliUrl || (!apiKey && !endpoint.startsWith('/login')) || !endpoint) {
             sendResponse({ error: "Configuration API incomplète reçue par le worker." });
@@ -36,13 +36,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 let data;
                 if (method === 'GET') {
-                    data = await apiService.get(doliUrl, apiKey, endpoint);
+                    data = await apiService.get(doliUrl, apiKey, endpoint, entity);
                 } else if (method === 'POST') {
-                    data = await apiService.post(doliUrl, apiKey, endpoint, body);
+                    data = await apiService.post(doliUrl, apiKey, endpoint, body, entity);
                 } else if (method === 'PUT') {
-                    data = await apiService.put(doliUrl, apiKey, endpoint, body);
+                    data = await apiService.put(doliUrl, apiKey, endpoint, body, entity);
                 } else if (method === 'DELETE') {
-                    data = await apiService.del(doliUrl, apiKey, endpoint);
+                    data = await apiService.del(doliUrl, apiKey, endpoint, entity);
                 } else if (method === 'UPLOAD') {
                     // Les formData bruts ne passent pas direct dans les messages. On le recrée.
                     // NOTE: FormData serialization strategy might be needed if uploading binary.

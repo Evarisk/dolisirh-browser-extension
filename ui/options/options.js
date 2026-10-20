@@ -18,10 +18,11 @@ async function fetchDoli(url, options = {}) {
         } catch (e) {}
 
         apiKey = options.headers?.DOLAPIKEY || options.headers?.['DOLAPIKEY'];
+        const entity = options.headers?.DOLAPIENTITY || options.headers?.['DOLAPIENTITY'] || '';
 
         chrome.runtime.sendMessage({
             type: MESSAGE_TYPES.API_CALL,
-            payload: { method, doliUrl, apiKey, endpoint, body }
+            payload: { method, doliUrl, apiKey, entity, endpoint, body }
         }, response => {
             if (chrome.runtime.lastError) {
                 return reject(new Error(chrome.runtime.lastError.message));
@@ -318,10 +319,15 @@ async function loadHrData(profile) {
             const projects = await pRes.json();
             projectSelect.innerHTML = '<option value="">-- Sélectionner un projet --</option>';
             if (Array.isArray(projects)) {
-                projects.forEach(proj => {
+                const targetEnt = profile.doliEntity ? String(profile.doliEntity).trim() : '';
+                const filteredProjects = targetEnt
+                    ? projects.filter(proj => String(proj.entity || '1') === targetEnt)
+                    : projects;
+                filteredProjects.forEach(proj => {
                     const opt = document.createElement('option');
                     opt.value = proj.id;
-                    opt.textContent = `${proj.ref} - ${proj.title}`;
+                    const doc = new DOMParser().parseFromString(`${proj.ref || ''} - ${proj.title || ''}`, 'text/html');
+                    opt.textContent = doc.documentElement.textContent || `${proj.ref} - ${proj.title}`;
                     if (profile.doliHrProject == proj.id || projectSelect.dataset.selectedValue == proj.id) {
                         opt.selected = true;
                     }
