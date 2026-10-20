@@ -55,7 +55,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true, data });
             } catch (error) {
                 // Ignore silencieusement l'erreur 404 (comportement de fallback normal pour champs manquants)
-                if (!error.message.includes('404')) {
+                const isLoginFallback = endpoint.startsWith('/login') && error.message.includes('403');
+                if (!error.message.includes('404') && !isLoginFallback) {
                     console.error(`[Background API Error] ${method} ${endpoint}:`, error);
                 }
                 sendResponse({ success: false, error: error.message });

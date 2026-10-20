@@ -829,5 +829,10 @@
     "onboarding_url_hint": { "message": "Enter your Dolibarr URL (the API will be detected automatically)." },
     "onboarding_open_doli": { "message": "Open my Dolibarr ↗" },
     "onboarding_btn_connect": { "message": "Test and connect" },
-    "onboarding_btn_advanced": { "message": "Advanced settings" }
+    "onboarding_btn_advanced": { "message": "Advanced settings" },
+    "opt_default_mode_label": { "message": "Default view on open" },
+    "std_planned_time_title": { "message": "Planned time" },
+    "std_spent_time_title": { "message": "Spent time" },
+    "opt_auto_create_spj_label": { "message": "Automatically create and preselect task SPJ_[Project title] if there is no task" },
+    "opt_require_note_label": { "message": "Make Note / Comment field mandatory" }
 }

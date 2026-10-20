@@ -40,26 +40,25 @@ async function testOnboardingConnection(apiUrl, login, passwordOrToken) {
         let authSuccess = false;
         let apiTokenFinal = passwordOrToken;
 
-        const loginResponse = await fetchDoli(
-            `${apiUrl}/login?login=${encodeURIComponent(login)}&password=${encodeURIComponent(passwordOrToken)}`,
-            { method: 'POST', headers: baseHeaders }
-        );
-
-        if (loginResponse.ok) {
-            const data = await loginResponse.json();
-            if (data && data.success && data.success.token) {
-                apiTokenFinal = data.success.token;
-                authSuccess = true;
-            }
+        const testKeyResponse = await fetchDoli(`${apiUrl}/status`, {
+            method: 'GET',
+            headers: { ...baseHeaders, 'DOLAPIKEY': passwordOrToken }
+        });
+        if (testKeyResponse.ok) {
+            authSuccess = true;
         }
 
         if (!authSuccess) {
-            const testKeyResponse = await fetchDoli(`${apiUrl}/status`, {
-                method: 'GET',
-                headers: { ...baseHeaders, 'DOLAPIKEY': passwordOrToken }
-            });
-            if (testKeyResponse.ok) {
-                authSuccess = true;
+            const loginResponse = await fetchDoli(
+                `${apiUrl}/login?login=${encodeURIComponent(login)}&password=${encodeURIComponent(passwordOrToken)}`,
+                { method: 'POST', headers: baseHeaders }
+            );
+            if (loginResponse.ok) {
+                const data = await loginResponse.json();
+                if (data && data.success && data.success.token) {
+                    apiTokenFinal = data.success.token;
+                    authSuccess = true;
+                }
             }
         }
 

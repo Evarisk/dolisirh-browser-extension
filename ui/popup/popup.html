@@ -117,15 +117,15 @@
             <!-- CONTENU PRINCIPAL -->
             <div id="timesheet-main-container">
 
-                <!-- TABS MODE : Présence/Absence | Projet Standard -->
+                <!-- TABS MODE : Projet Standard | Présence/Absence -->
                 <div class="ts-mode-tabs">
-                    <button type="button" id="btn-mode-rh" class="ts-tab-btn ts-tab-active">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        <span data-i18n="time_hr_mode">Présence / Absence</span>
-                    </button>
                     <button type="button" id="btn-mode-standard" class="ts-tab-btn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         <span data-i18n="time_standard_project">Projet Standard</span>
+                    </button>
+                    <button type="button" id="btn-mode-rh" class="ts-tab-btn ts-tab-active">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span data-i18n="time_hr_mode">Présence / Absence</span>
                     </button>
                 </div>
 
@@ -183,7 +183,10 @@
                 <!-- ═══════════════════════ MODE STANDARD ═══════════════════════ -->
                 <div id="timesheet-mode-standard" class="hidden" style="margin-top:10px;">
                     <div class="form-group">
-                        <label for="time-project"><span data-i18n="time_project">Projet</span></label>
+                        <label for="time-project" class="std-label-with-stats">
+                            <span data-i18n="time_project">Projet</span>
+                            <span id="std-project-stats" class="std-inline-stats hidden"></span>
+                        </label>
                         <div class="searchable-select-container" style="min-width:0;">
                             <select id="time-project" class="searchable-select hidden">
                                 <option value=""><span data-i18n="time_select_project">Sélectionner un projet</span></option>
@@ -191,7 +194,10 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="time-task"><span data-i18n="time_task">Tâche</span></label>
+                        <label for="time-task" class="std-label-with-stats">
+                            <span data-i18n="time_task">Tâche</span>
+                            <span id="std-task-stats" class="std-inline-stats hidden"></span>
+                        </label>
                         <div class="searchable-select-container" style="min-width:0;">
                             <select id="time-task" class="searchable-select hidden" disabled>
                                 <option value=""><span data-i18n="time_select_task">Sélectionner une tâche</span></option>
@@ -205,20 +211,20 @@
                         </div>
                         <div style="flex:1;">
                             <label for="time-duration-std">Durée (HH:MM)</label>
-                            <input type="time" id="time-duration-std" value="01:00" required>
+                            <input type="time" id="time-duration-std" value="00:15" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="time-note-std">Note / Commentaire</label>
-                        <textarea id="time-note-std" rows="2" placeholder="Ex: Réunion d'avancement.."></textarea>
+                        <label for="time-note-std"><span data-i18n="time_note">Note / Commentaire</span> <span id="std-note-req-star" style="color:#ef4444;font-weight:700;">*</span></label>
+                        <div class="std-note-action-row">
+                            <textarea id="time-note-std" rows="2" placeholder="Ex: Réunion d'avancement.." style="flex:1;"></textarea>
+                            <button type="button" id="btn-submit-time-std" class="ts-hr-star-btn std-save-disk-btn" data-i18n-title="time_save" title="Enregistrer le temps" disabled>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                            </button>
+                        </div>
                     </div>
-                    <button type="button" id="btn-submit-time-std" class="btn-submit-rocket" style="margin-top:8px;" disabled>
-                        <span class="spinner"></span>
-                        <span class="btn-text">
-                            <span data-i18n="time_save">Enregistrer le temps</span>
-                        </span>
-                    </button>
                     <div id="time-status-std" style="font-size:11px;text-align:center;margin-top:6px;font-weight:bold;"></div>
+                    <div id="std-project-history" class="std-project-history hidden"></div>
                 </div>
 
             </div><!-- END MAIN CONTAINER -->

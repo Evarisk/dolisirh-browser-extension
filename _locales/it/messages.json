@@ -640,5 +640,10 @@
     "onboarding_url_hint": { "message": "Inserisci l'indirizzo del tuo Dolibarr (l'API verrà rilevata automaticamente)." },
     "onboarding_open_doli": { "message": "Apri il mio Dolibarr ↗" },
     "onboarding_btn_connect": { "message": "Testa e connetti" },
-    "onboarding_btn_advanced": { "message": "Impostazioni avanzate" }
+    "onboarding_btn_advanced": { "message": "Impostazioni avanzate" },
+    "opt_default_mode_label": { "message": "Vista predefinita all'apertura" },
+    "std_planned_time_title": { "message": "Tempo previsto" },
+    "std_spent_time_title": { "message": "Tempo trascorso" },
+    "opt_auto_create_spj_label": { "message": "Crea e preseleziona automaticamente il task SPJ_[Titolo del progetto] se non ci sono task" },
+    "opt_require_note_label": { "message": "Rendi obbligatorio il campo Nota / Commento" }
 }

@@ -53,21 +53,20 @@ async function testDolibarrConnection(apiUrl, login, passwordOrToken, entity) {
             baseHeaders['DOLAPIENTITY'] = entity.trim();
         }
 
-        const loginResponse = await fetchDoli(`${apiUrl}/login?login=${encodeURIComponent(login)}&password=${encodeURIComponent(passwordOrToken)}`, {
-            method: 'POST',
-            headers: baseHeaders
+        const testKeyResponse = await fetchDoli(`${apiUrl}/status`, {
+            headers: { ...baseHeaders, 'DOLAPIKEY': passwordOrToken }
         });
-
-        if (loginResponse.ok) {
-            const data = await loginResponse.json();
-            apiTokenFinal = data.success ? data.success.token : null;
-            authSuccess = Boolean(apiTokenFinal);
+        if (testKeyResponse.ok) {
+            authSuccess = true;
         } else {
-            const testKeyResponse = await fetchDoli(`${apiUrl}/status`, {
-                headers: { ...baseHeaders, 'DOLAPIKEY': passwordOrToken }
+            const loginResponse = await fetchDoli(`${apiUrl}/login?login=${encodeURIComponent(login)}&password=${encodeURIComponent(passwordOrToken)}`, {
+                method: 'POST',
+                headers: baseHeaders
             });
-            if (testKeyResponse.ok) {
-                authSuccess = true;
+            if (loginResponse.ok) {
+                const data = await loginResponse.json();
+                apiTokenFinal = data.success ? data.success.token : null;
+                authSuccess = Boolean(apiTokenFinal);
             }
         }
 
@@ -177,6 +176,19 @@ function loadProfileIntoForm(p) {
     }
     if (_abSel) {
         _abSel.dataset.selectedValues = JSON.stringify(p.doliHrAbsenceTasks || []);
+    }
+
+    const defaultMode = p.doliDefaultMode || 'rh';
+    const modeRadio = document.querySelector(`input[name="doli-default-mode"][value="${defaultMode}"]`);
+    if (modeRadio) modeRadio.checked = true;
+
+    const autoSpjCb = document.getElementById('doli-auto-create-spj');
+    if (autoSpjCb) {
+        autoSpjCb.checked = p.doliAutoCreateSpjTask !== undefined ? Boolean(p.doliAutoCreateSpjTask) : true;
+    }
+    const reqNoteCb = document.getElementById('doli-require-note');
+    if (reqNoteCb) {
+        reqNoteCb.checked = p.doliRequireNote !== undefined ? Boolean(p.doliRequireNote) : true;
     }
 
     function toHHMM(val) {
@@ -582,6 +594,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('doli-hr-absence-tasks')) {
             p.doliHrAbsenceTasks = Array.from(document.getElementById('doli-hr-absence-tasks').selectedOptions).map(opt => opt.value);
         }
+        const checkedMode = document.querySelector('input[name="doli-default-mode"]:checked');
+        if (checkedMode) {
+            p.doliDefaultMode = checkedMode.value;
+        }
+        const autoSpjCb = document.getElementById('doli-auto-create-spj');
+        if (autoSpjCb) {
+            p.doliAutoCreateSpjTask = autoSpjCb.checked;
+        }
+        const reqNoteCb = document.getElementById('doli-require-note');
+        if (reqNoteCb) {
+            p.doliRequireNote = reqNoteCb.checked;
+        }
 
         const saveToStorage = () => {
             chrome.storage.sync.set({
@@ -600,7 +624,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const urlObj = new URL(p.doliUrl || 'https://example.com');
             const originPattern = urlObj.origin + "/*";
             chrome.permissions.request({ origins: [originPattern] }, (granted) => {
-                if (!granted) {
+                if (chrome.runtime.lastError) {
+                    console.warn("Permission request info:", chrome.runtime.lastError.message);
+                } else if (!granted) {
                     statusDiv.style.color = "#f39c12";
                     statusDiv.textContent = '⚠️ ' + chrome.i18n.getMessage("error_permission_denied");
                 }
@@ -655,6 +681,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('doli-hr-presence-tasks')?.addEventListener('change', window.markHrDirty);
     document.getElementById('doli-hr-absence-tasks')?.addEventListener('change', window.markHrDirty);
+    document.querySelectorAll('input[name="doli-default-mode"]').forEach(r => r.addEventListener('change', window.markHrDirty));
+    document.getElementById('doli-auto-create-spj')?.addEventListener('change', window.markHrDirty);
+    document.getElementById('doli-require-note')?.addEventListener('change', window.markHrDirty);
 
     const btnSaveHr = document.getElementById('btn-save-hr');
     if (btnSaveHr) {
@@ -685,11 +714,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 startTime[d] = startInp ? (startInp.value || '00:00') : '00:00';
             });
 
+            const defaultMode = document.querySelector('input[name="doli-default-mode"]:checked')?.value || 'rh';
+            const autoCreateSpj = document.getElementById('doli-auto-create-spj') ? document.getElementById('doli-auto-create-spj').checked : true;
+            const requireNote = document.getElementById('doli-require-note') ? document.getElementById('doli-require-note').checked : true;
             p.doliHrProject = projectId;
             p.doliHrPresenceTasks = presenceTasks;
             p.doliHrAbsenceTasks = absenceTasks;
             p.doliHrSchedule = schedule;
             p.doliHrStartTime = startTime;
+            p.doliDefaultMode = defaultMode;
+            p.doliAutoCreateSpjTask = autoCreateSpj;
+            p.doliRequireNote = requireNote;
 
             if (presenceEl) presenceEl.dataset.selectedValues = JSON.stringify(presenceTasks);
             if (absenceEl) absenceEl.dataset.selectedValues = JSON.stringify(absenceTasks);
@@ -712,7 +747,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         doliHrPresenceTasks: presenceTasks,
                         doliHrAbsenceTasks: absenceTasks,
                         doliHrSchedule: schedule,
-                        doliHrStartTime: startTime
+                        doliHrStartTime: startTime,
+                        doliDefaultMode: defaultMode,
+                        doliAutoCreateSpjTask: autoCreateSpj,
+                        doliRequireNote: requireNote
                     });
                 }
                 chrome.storage.sync.set({ doliProfiles: storedProfiles }, () => {
