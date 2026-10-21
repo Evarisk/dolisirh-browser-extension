@@ -300,6 +300,88 @@ function renderPermissions(statusObj, baseUrl) {
     dashboard.classList.remove('hidden');
 }
 
+/**
+ * Normalise un texte (minuscules, sans accents, entites HTML decodees) pour la detection RH par defaut.
+ * @param {string} str
+ * @returns {string}
+ */
+function normalizeHrText(str) {
+    if (!str) return '';
+    const doc = new DOMParser().parseFromString(String(str), 'text/html');
+    const clean = doc.documentElement.textContent || String(str);
+    return clean.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+/**
+ * Determine si un projet Dolibarr est le projet Ressources Humaines par defaut de DoliSIRH.
+ * @param {Object} proj
+ * @returns {boolean}
+ */
+function isDefaultHrProject(proj) {
+    if (!proj) return false;
+    const title = normalizeHrText(proj.title || '');
+    const desc = normalizeHrText(proj.description || '');
+    return title.includes('ressources humaines') || title.includes('human resources') || title.includes('humanresources')
+        || desc.includes('ressources humaines') || desc.includes('human resources');
+}
+
+/**
+ * Recherche le meilleur projet RH par defaut : priorise la version "2.0.0" si elle existe,
+ * sinon prend le projet "Ressources humaines" standard.
+ * @param {Array<Object>} projectsList
+ * @returns {Object|undefined}
+ */
+function findDefaultHrProject(projectsList) {
+    if (!Array.isArray(projectsList)) return undefined;
+    const hrProjects = projectsList.filter(isDefaultHrProject);
+    const v200 = hrProjects.find(p => normalizeHrText(p.title || '').includes('2.0.0'));
+    return v200 || hrProjects[0];
+}
+
+/**
+ * Classe une tache du projet RH en 'presence' (WORK_TIME) ou 'absence' (NON_WORK_TIME) selon les libelles DoliSIRH.
+ * @param {Object} task
+ * @returns {'presence'|'absence'|null}
+ */
+function classifyDefaultHrTask(task) {
+    if (!task) return null;
+    const lbl = normalizeHrText(task.label || '');
+    if (!lbl) return null;
+
+    const absencePatterns = [
+        'conges sans solde', 'holidays',
+        'conges payes', 'paid holidays', 'paidholidays',
+        'arret maladie', 'sick leave', 'sickleave', 'maladie',
+        'jour ferie', 'jours feries', 'public holiday', 'publicholiday', 'ferie',
+        'rtt',
+        'recuperation', 'recovery',
+        'repos compensateur', 'compensatory rest', 'compensatoryrest',
+        'absence exceptionnelle', 'exceptional absence', 'exceptionalabsence',
+        'conge', 'absence'
+    ];
+    if (absencePatterns.some(p => lbl === p || lbl.includes(p))) {
+        return 'absence';
+    }
+
+    const presencePatterns = [
+        'temps de travail effectif', 'travail effectif', 'effective work time', 'effectiveworktime',
+        'formation professionnelle', 'professional training', 'professionaltraining',
+        'deplacement professionnel', 'business travel', 'businesstravelmission', 'deplacement',
+        'delegation cse', 'cse delegation', 'csedelegation',
+        'reunion interne', 'internal meeting', 'internalmeeting', 'reunion',
+        'formation interne', 'internal training', 'internaltraining',
+        'formation externe', 'external training', 'externaltraining', 'formation',
+        'auto-pointage', 'automatic time', 'automatictimespending',
+        'divers', 'miscellaneous',
+        'presence', 'teletravail'
+    ];
+    if (presencePatterns.some(p => lbl === p || lbl.includes(p))) {
+        return 'presence';
+    }
+
+    return null;
+}
+
 async function loadHrData(profile) {
     const projectSelect = document.getElementById('doli-hr-project');
     const presenceSelect = document.getElementById('doli-hr-presence-tasks');
@@ -314,25 +396,47 @@ async function loadHrData(profile) {
     if (btn) btn.disabled = true;
 
     try {
-        const pRes = await fetchDoli(`${profile.doliUrl}/projects?limit=10000&status=1`, { headers });
+        const pRes = await fetchDoli(`${profile.doliUrl}/projects?sqlfilters=(t.fk_statut:=:1)&sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
         if (pRes.ok) {
             const projects = await pRes.json();
-            projectSelect.innerHTML = '<option value="">-- Sélectionner un projet --</option>';
+            projectSelect.innerHTML = '<option value="">-- S\u00e9lectionner un projet --</option>';
             if (Array.isArray(projects)) {
                 const targetEnt = profile.doliEntity ? String(profile.doliEntity).trim() : '';
+                const openProjects = projects.filter(proj => String(proj.statut ?? proj.fk_statut ?? proj.status ?? '1') === '1');
                 const filteredProjects = targetEnt
-                    ? projects.filter(proj => String(proj.entity || '1') === targetEnt)
-                    : projects;
+                    ? openProjects.filter(proj => String(proj.entity || '1') === targetEnt)
+                    : openProjects;
+
+                const defaultHrProj = findDefaultHrProject(filteredProjects);
+                const savedProjId = String(profile.doliHrProject || projectSelect.dataset.selectedValue || '');
+                const savedProj = filteredProjects.find(pr => String(pr.id) === savedProjId);
+                const hasConfiguredTasks = (Array.isArray(profile.doliHrPresenceTasks) && profile.doliHrPresenceTasks.length > 0)
+                    || (Array.isArray(profile.doliHrAbsenceTasks) && profile.doliHrAbsenceTasks.length > 0);
+
+                const defaultIs200 = defaultHrProj && normalizeHrText(defaultHrProj.title || '').includes('2.0.0');
+                const savedIsOldHr = savedProj && isDefaultHrProject(savedProj) && !normalizeHrText(savedProj.title || '').includes('2.0.0');
+                let targetProjectId = savedProj ? String(savedProj.id) : '';
+                if (defaultHrProj && (!savedProj || (defaultIs200 && savedIsOldHr) || (!hasConfiguredTasks && !isDefaultHrProject(savedProj)))) {
+                    targetProjectId = String(defaultHrProj.id);
+                    projectSelect.dataset.selectedValue = targetProjectId;
+                    presenceSelect.dataset.selectedValues = '[]';
+                    absenceSelect.dataset.selectedValues = '[]';
+                }
+
                 filteredProjects.forEach(proj => {
                     const opt = document.createElement('option');
                     opt.value = proj.id;
                     const doc = new DOMParser().parseFromString(`${proj.ref || ''} - ${proj.title || ''}`, 'text/html');
                     opt.textContent = doc.documentElement.textContent || `${proj.ref} - ${proj.title}`;
-                    if (profile.doliHrProject == proj.id || projectSelect.dataset.selectedValue == proj.id) {
+                    if (String(proj.id) === targetProjectId) {
                         opt.selected = true;
                     }
                     projectSelect.appendChild(opt);
                 });
+
+                if (targetProjectId) {
+                    projectSelect.value = targetProjectId;
+                }
 
                 if (!window.optionsHrProjectSelect) {
                     window.optionsHrProjectSelect = new CustomSelect(projectSelect);
@@ -369,26 +473,61 @@ async function loadHrTasks(profile, projectId, presenceSelect, absenceSelect) {
 
             let presenceSelected = [];
             let absenceSelected = [];
-            try { presenceSelected = JSON.parse(presenceSelect.dataset.selectedValues || "[]"); } catch (e) {}
-            try { absenceSelected = JSON.parse(absenceSelect.dataset.selectedValues || "[]"); } catch (e) {}
+            try { presenceSelected = JSON.parse(presenceSelect.dataset.selectedValues || "[]").map(String); } catch (e) {}
+            try { absenceSelected = JSON.parse(absenceSelect.dataset.selectedValues || "[]").map(String); } catch (e) {}
 
             presenceSelect.innerHTML = '';
             absenceSelect.innerHTML = '';
 
             if (Array.isArray(tasks)) {
+                const taskIdsSet = new Set(tasks.map(t => String(t.id)));
+                presenceSelected = presenceSelected.filter(id => taskIdsSet.has(String(id)));
+                absenceSelected = absenceSelected.filter(id => taskIdsSet.has(String(id)));
+
+                let autoFilledDefaults = false;
+                if (presenceSelected.length === 0 && absenceSelected.length === 0) {
+                    tasks.forEach(task => {
+                        const kind = classifyDefaultHrTask(task);
+                        if (kind === 'presence') presenceSelected.push(String(task.id));
+                        else if (kind === 'absence') absenceSelected.push(String(task.id));
+                    });
+                    if (presenceSelected.length > 0 || absenceSelected.length > 0) {
+                        autoFilledDefaults = true;
+                        presenceSelect.dataset.selectedValues = JSON.stringify(presenceSelected);
+                        absenceSelect.dataset.selectedValues = JSON.stringify(absenceSelected);
+                    }
+                }
+
                 tasks.forEach(task => {
+                    const doc = new DOMParser().parseFromString(task.label || '', 'text/html');
+                    const cleanLabel = doc.documentElement.textContent || task.label || '';
+
                     const opt1 = document.createElement('option');
                     opt1.value = task.id;
-                    opt1.textContent = `${task.ref} - ${task.label}`;
+                    opt1.textContent = `${task.ref} - ${cleanLabel}`;
                     if (presenceSelected.includes(String(task.id))) opt1.selected = true;
                     presenceSelect.appendChild(opt1);
 
                     const opt2 = document.createElement('option');
                     opt2.value = task.id;
-                    opt2.textContent = `${task.ref} - ${task.label}`;
+                    opt2.textContent = `${task.ref} - ${cleanLabel}`;
                     if (absenceSelected.includes(String(task.id))) opt2.selected = true;
                     absenceSelect.appendChild(opt2);
                 });
+
+                if (autoFilledDefaults && profile) {
+                    profile.doliHrProject = String(projectId);
+                    profile.doliHrPresenceTasks = presenceSelected;
+                    profile.doliHrAbsenceTasks = absenceSelected;
+                    const projSelectEl = document.getElementById('doli-hr-project');
+                    const selOpt = projSelectEl ? projSelectEl.options[projSelectEl.selectedIndex] : null;
+                    if (selOpt && selOpt.text) {
+                        const parts = selOpt.text.split(' - ');
+                        profile.doliHrProjectRef = parts[0] || '';
+                        profile.doliHrProjectTitle = parts.slice(1).join(' - ') || '';
+                    }
+                    chrome.storage.sync.set({ doliProfiles: profiles });
+                }
 
                 const updateExclusions = () => {
                     const presSelected = Array.from(presenceSelect.selectedOptions).map(opt => opt.value);
@@ -658,6 +797,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const p = getActiveProfile();
             const presenceSelect = document.getElementById('doli-hr-presence-tasks');
             const absenceSelect = document.getElementById('doli-hr-absence-tasks');
+            if (presenceSelect) presenceSelect.dataset.selectedValues = "[]";
+            if (absenceSelect) absenceSelect.dataset.selectedValues = "[]";
             loadHrTasks(p, e.target.value, presenceSelect, absenceSelect);
         });
     }
@@ -724,6 +865,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const autoCreateSpj = document.getElementById('doli-auto-create-spj') ? document.getElementById('doli-auto-create-spj').checked : true;
             const requireNote = document.getElementById('doli-require-note') ? document.getElementById('doli-require-note').checked : true;
             p.doliHrProject = projectId;
+            const projSelectEl = document.getElementById('doli-hr-project');
+            const selOpt = projSelectEl ? projSelectEl.options[projSelectEl.selectedIndex] : null;
+            if (selOpt && selOpt.text && projectId) {
+                const parts = selOpt.text.split(' - ');
+                p.doliHrProjectRef = parts[0] || '';
+                p.doliHrProjectTitle = parts.slice(1).join(' - ') || '';
+            }
             p.doliHrPresenceTasks = presenceTasks;
             p.doliHrAbsenceTasks = absenceTasks;
             p.doliHrSchedule = schedule;
@@ -750,6 +898,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (idx !== -1) {
                     storedProfiles[idx] = Object.assign(storedProfiles[idx], {
                         doliHrProject: projectId,
+                        doliHrProjectRef: p.doliHrProjectRef || '',
+                        doliHrProjectTitle: p.doliHrProjectTitle || '',
                         doliHrPresenceTasks: presenceTasks,
                         doliHrAbsenceTasks: absenceTasks,
                         doliHrSchedule: schedule,
