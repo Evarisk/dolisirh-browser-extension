@@ -256,7 +256,7 @@
     "description": "Extracted string opt_60"
   },
   "opt_61": {
-    "message": "URL complète de l'API Dolibarr (ex: https://www.dolibarr.org/htdocs/api/index.php)",
+    "message": "URL complète de l'API Dolibarr (ex: https://www.dolibarr.org/htdocs/api/index.php ou sans \"htdocs\")",
     "description": "Extracted string opt_61"
   },
   "opt_62": {
@@ -264,7 +264,7 @@
     "description": "Extracted string opt_62"
   },
   "opt_63": {
-    "message": "Mot de passe / Clé API",
+    "message": "Clé API",
     "description": "Extracted string opt_63"
   },
   "opt_64": {
@@ -424,7 +424,7 @@
     "description": "Extracted string opt_ph_102"
   },
   "opt_ph_103": {
-    "message": "Votre mot de passe ou clé API",
+    "message": "Votre clé API",
     "description": "Extracted string opt_ph_103"
   },
   "opt_ph_104": {
