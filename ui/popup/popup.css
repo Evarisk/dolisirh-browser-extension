@@ -2741,6 +2741,27 @@ button.ts-hr-star-btn.ts-star-loading {
     color: #0259a8;
 }
 
+.std-hist-obj-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+    color: #0259a8;
+    text-decoration: none;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.std-hist-obj-link:hover {
+    text-decoration: underline;
+    color: #0369a1;
+}
+
+.std-hist-obj-icon {
+    flex-shrink: 0;
+    color: #0259a8;
+}
+
 .std-hist-sep {
     color: #cbd5e1;
     font-weight: 400;
@@ -2825,10 +2846,36 @@ button.std-create-spj-btn:disabled {
 }
 
 .entity-switcher {
-    max-width: 125px;
+    max-width: 118px;
     background-color: #eff6ff;
     border-color: #bfdbfe;
     color: #1e40af;
+}
+
+button.top-open-doli-btn {
+    width: 26px !important;
+    min-width: 26px !important;
+    max-width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+button.top-open-doli-btn:hover {
+    background-color: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
 }
 
 /* ===== VUE MENSUELLE : CALENDRIER DYNAMIQUE SEMAINE / MENSUEL ===== */

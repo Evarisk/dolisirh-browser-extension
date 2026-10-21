@@ -222,8 +222,25 @@ function buildDailyLoggedMap() {
  * sur l'ensemble des projets hors projet RH (doliHrProject).
  * @returns {Object<string, number>}
  */
+/**
+ * Retourne l'ensemble des IDs de projets RH a exclure (projet RH configure + projets RH DoliSIRH detectes).
+ * @returns {Set<string>}
+ */
+function getExcludedHrProjectIds() {
+    const ids = new Set();
+    if (profileConfig?.doliHrProject) ids.add(String(profileConfig.doliHrProject));
+    if (Array.isArray(allLoadedProjects)) {
+        allLoadedProjects.forEach(p => {
+            if (p && p.id && typeof isDefaultHrProject === 'function' && isDefaultHrProject(p)) {
+                ids.add(String(p.id));
+            }
+        });
+    }
+    return ids;
+}
+
 function buildProjectDailyLoggedMap() {
-    const hrProjId = String(profileConfig?.doliHrProject || '');
+    const hrProjIds = getExcludedHrProjectIds();
     const hrTaskIds = new Set([
         ...(profileConfig?.doliHrPresenceTasks || []).map(String),
         ...(profileConfig?.doliHrAbsenceTasks || []).map(String)
@@ -232,7 +249,7 @@ function buildProjectDailyLoggedMap() {
 
     Object.entries(projectTaskLinesCache).forEach(([taskId, entry]) => {
         if (!entry || hrTaskIds.has(String(taskId))) return;
-        if (hrProjId && String(entry.fkProject || '') === hrProjId) return;
+        if (entry.fkProject && hrProjIds.has(String(entry.fkProject))) return;
         const lines = Array.isArray(entry.lines) ? entry.lines : [];
         lines.forEach(line => {
             const ts = parseInt(line.timespent_line_datehour || line.timespent_line_date || 0, 10);
@@ -260,6 +277,7 @@ async function updateProjectTimespentStats(forceRefresh = false) {
     if (isFetchingProjectTimespent) return;
     if (!forceRefresh && Object.keys(projectTaskLinesCache).length > 0) {
         buildWeekPicker();
+        renderStandardProjectHistory();
         return;
     }
 
@@ -310,6 +328,9 @@ async function updateProjectTimespentStats(forceRefresh = false) {
             if (Array.isArray(t.lines)) {
                 const myLines = t.lines.filter(e => String(e.timespent_line_fk_user || '') === String(globalCurrentUserId));
                 projectTaskLinesCache[tid] = {
+                    taskId: tid,
+                    taskRef: decodeHtmlEntities(t.ref || ''),
+                    taskLabel: decodeHtmlEntities(t.label || ''),
                     fkProject: fkProj,
                     durationEffective: durEff,
                     lines: myLines
@@ -341,6 +362,9 @@ async function updateProjectTimespentStats(forceRefresh = false) {
                         const allLines = Array.isArray(taskData.lines) ? taskData.lines : [];
                         const myLines = allLines.filter(e => String(e.timespent_line_fk_user || '') === String(globalCurrentUserId));
                         projectTaskLinesCache[tid] = {
+                            taskId: tid,
+                            taskRef: decodeHtmlEntities(taskData.ref || t.ref || ''),
+                            taskLabel: decodeHtmlEntities(taskData.label || t.label || ''),
                             fkProject: fkProj,
                             durationEffective: durEff,
                             lines: myLines
@@ -351,6 +375,7 @@ async function updateProjectTimespentStats(forceRefresh = false) {
         }
 
         buildWeekPicker();
+        renderStandardProjectHistory();
     } catch (err) {
         console.warn('[ReedCRM] Erreur chargement temps projets hors RH:', err);
     } finally {
@@ -494,6 +519,7 @@ function buildWeekPicker() {
             checkSubmitStatus();
             updateCardsDefaultTime(DAY_KEYS[i]);
             buildWeekPicker();
+            renderStandardProjectHistory();
             updateDailyTimespentStats();
         });
 
@@ -1136,6 +1162,7 @@ export function initTimesheet(url, token, entity, profile) {
         if (dateInput) dateInput.value = dStr;
         if (dateStdInput) dateStdInput.value = dStr;
         buildWeekPicker();
+        renderStandardProjectHistory();
         updateHrProjectInfo();
         updateDailyTimespentStats();
     });
@@ -1145,6 +1172,7 @@ export function initTimesheet(url, token, entity, profile) {
         if (dateInput) dateInput.value = dStr;
         if (dateStdInput) dateStdInput.value = dStr;
         buildWeekPicker();
+        renderStandardProjectHistory();
         updateHrProjectInfo();
         updateDailyTimespentStats();
     });
@@ -1302,6 +1330,7 @@ export function initTimesheet(url, token, entity, profile) {
                 const hiddenDate = document.getElementById('time-date');
                 if (hiddenDate) hiddenDate.value = dateStdEl.value;
                 buildWeekPicker();
+                renderStandardProjectHistory();
             }
             checkSubmitStatus();
         });
@@ -1595,6 +1624,8 @@ async function loadStandardProjects() {
 
         // Afficher uniquement les projets de l'entite selectionnee
         renderProjectsForActiveEntity();
+        buildWeekPicker();
+        renderStandardProjectHistory();
     } catch (e) {
         console.error('Error fetching standard projects', e);
     }
@@ -1788,11 +1819,7 @@ async function loadStandardTasks(projectId) {
             projStatsEl.innerHTML = '';
             projStatsEl.classList.add('hidden');
         }
-        const projHistEl = document.getElementById('std-project-history');
-        if (projHistEl) {
-            projHistEl.innerHTML = '';
-            projHistEl.classList.add('hidden');
-        }
+        renderStandardProjectHistory();
         if (window.timeTaskSelect) window.timeTaskSelect.update();
         checkSubmitStatus();
         return;
@@ -1877,159 +1904,226 @@ async function loadStandardTasks(projectId) {
  *   jj/mm/aa|LM|Duree|Note
  * @returns {Promise<void>}
  */
-async function loadStandardProjectHistory(refreshTaskId = null) {
+/**
+ * Cree un element lien style Dolibarr getNomUrl(1) pour une tache/projet.
+ * @param {string|number} taskId
+ * @param {string} taskRef
+ * @param {string} taskLabel
+ * @param {string|number} fkProject
+ * @returns {HTMLAnchorElement}
+ */
+function createTaskNomUrlElement(taskId, taskRef, taskLabel, fkProject) {
+    const link = document.createElement('a');
+    link.className = 'std-hist-obj-link';
+    link.href = '#';
+
+    const proj = standardProjectsMap[String(fkProject || '')]
+        || allLoadedProjects.find(p => String(p.id) === String(fkProject || ''));
+    const projRef = proj ? decodeHtmlEntities(proj.ref || '') : '';
+    const projTitle = proj ? decodeHtmlEntities(proj.title || '') : '';
+
+    const tooltipParts = [];
+    if (projRef || projTitle) tooltipParts.push(`Projet : ${projRef}${projTitle ? ' - ' + projTitle : ''}`);
+    if (taskRef || taskLabel) tooltipParts.push(`T\u00e2che : ${taskRef}${taskLabel ? ' - ' + taskLabel : ''}`);
+    link.title = tooltipParts.join('\n') || (chrome.i18n.getMessage('time_card_open_doli_title') || 'Ouvrir dans Dolibarr');
+
+    // Picto tache Dolibarr (clipboard-check)
+    const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    iconSvg.setAttribute('width', '12');
+    iconSvg.setAttribute('height', '12');
+    iconSvg.setAttribute('viewBox', '0 0 24 24');
+    iconSvg.setAttribute('fill', 'none');
+    iconSvg.setAttribute('stroke', 'currentColor');
+    iconSvg.setAttribute('stroke-width', '2');
+    iconSvg.setAttribute('stroke-linecap', 'round');
+    iconSvg.setAttribute('stroke-linejoin', 'round');
+    const rectClip = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rectClip.setAttribute('x', '9'); rectClip.setAttribute('y', '2');
+    rectClip.setAttribute('width', '6'); rectClip.setAttribute('height', '4');
+    rectClip.setAttribute('rx', '1');
+    const pathClip = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathClip.setAttribute('d', 'M9 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-2');
+    const polyCheck = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyCheck.setAttribute('points', '9 12 11 14 15 10');
+    iconSvg.appendChild(rectClip);
+    iconSvg.appendChild(pathClip);
+    iconSvg.appendChild(polyCheck);
+
+    const refTxt = document.createElement('span');
+    refTxt.textContent = taskRef || projRef || `#${taskId}`;
+
+    link.appendChild(iconSvg);
+    link.appendChild(refTxt);
+
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const baseUrl = doliUrl.replace(/\/api\/index\.php\/?$/i, '');
+            const targetUrl = taskId
+                ? `${baseUrl}/projet/tasks/task.php?id=${encodeURIComponent(taskId)}`
+                : `${baseUrl}/projet/card.php?id=${encodeURIComponent(fkProject)}`;
+            chrome.tabs.create({ url: targetUrl });
+        } catch (_) {}
+    });
+
+    return link;
+}
+
+/**
+ * Affiche dans #std-project-history les temps pointes sur les projets (hors projet RH de la configuration)
+ * pour la date selectionnee (ou le projet selectionne) au format :
+ *   date | objet (getNomUrl) | description | duree
+ */
+function renderStandardProjectHistory() {
     const container = document.getElementById('std-project-history');
     if (!container) return;
 
-    const tasks = Object.values(standardTasksMap);
-    if (tasks.length === 0) {
+    const hrProjIds = getExcludedHrProjectIds();
+    const hrTaskIds = new Set([
+        ...(profileConfig?.doliHrPresenceTasks || []).map(String),
+        ...(profileConfig?.doliHrAbsenceTasks || []).map(String)
+    ]);
+
+    const targetDateStr = toLocalDateStr(selectedDate);
+    const allEntries = [];
+
+    Object.entries(projectTaskLinesCache).forEach(([tid, entry]) => {
+        if (!entry || hrTaskIds.has(String(tid))) return;
+        if (entry.fkProject && hrProjIds.has(String(entry.fkProject))) return;
+        const lines = Array.isArray(entry.lines) ? entry.lines : [];
+        lines.forEach(line => {
+            const ts = parseInt(line.timespent_line_datehour || line.timespent_line_date || 0, 10);
+            const dur = parseInt(line.timespent_line_duration || 0, 10);
+            if (ts <= 0 || dur <= 0) return;
+            const dStr = toLocalDateStr(new Date(ts * 1000));
+            if (dStr !== targetDateStr) return;
+            allEntries.push({
+                ...line,
+                _taskId: entry.taskId || tid,
+                _taskRef: entry.taskRef || '',
+                _taskLabel: entry.taskLabel || '',
+                _fkProject: entry.fkProject || ''
+            });
+        });
+    });
+
+    if (allEntries.length === 0) {
         container.innerHTML = '';
         container.classList.add('hidden');
         return;
     }
 
+    allEntries.sort((a, b) => {
+        const tsA = parseInt(a.timespent_line_datehour || a.timespent_line_date || 0, 10);
+        const tsB = parseInt(b.timespent_line_datehour || b.timespent_line_date || 0, 10);
+        if (tsB !== tsA) return tsB - tsA;
+        const idA = parseInt(a.timespent_line_id || a.id || 0, 10);
+        const idB = parseInt(b.timespent_line_id || b.id || 0, 10);
+        return idB - idA;
+    });
+
+    container.innerHTML = '';
+    container.classList.remove('hidden');
+
+    allEntries.forEach(entry => {
+        const ts = parseInt(entry.timespent_line_datehour || entry.timespent_line_date || 0, 10);
+        let dateShort = '-';
+        if (ts > 0) {
+            const d = new Date(ts * 1000);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yy = String(d.getFullYear()).slice(-2);
+            dateShort = `${dd}/${mm}/${yy}`;
+        }
+
+        const durStr = formatSecToHHMM(entry.timespent_line_duration || 0);
+        const noteStr = decodeHtmlEntities((entry.timespent_line_note || '').trim());
+
+        const item = document.createElement('div');
+        item.className = 'std-hist-item';
+
+        // Ligne unique : date | objet (getNomUrl) | description | duree
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'std-hist-meta';
+
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'std-hist-date';
+        dateSpan.textContent = dateShort;
+
+        const sep1 = document.createElement('span');
+        sep1.className = 'std-hist-sep';
+        sep1.textContent = '|';
+
+        const objEl = createTaskNomUrlElement(entry._taskId, entry._taskRef, entry._taskLabel, entry._fkProject);
+
+        const sep2 = document.createElement('span');
+        sep2.className = 'std-hist-sep';
+        sep2.textContent = '|';
+
+        const noteSpan = document.createElement('span');
+        noteSpan.className = 'std-hist-note';
+        noteSpan.textContent = noteStr || '-';
+        if (noteStr) noteSpan.title = noteStr;
+
+        const sep3 = document.createElement('span');
+        sep3.className = 'std-hist-sep';
+        sep3.textContent = '|';
+
+        const durSpan = document.createElement('span');
+        durSpan.className = 'std-hist-dur';
+        durSpan.textContent = durStr;
+
+        metaDiv.appendChild(dateSpan);
+        metaDiv.appendChild(sep1);
+        metaDiv.appendChild(objEl);
+        metaDiv.appendChild(sep2);
+        metaDiv.appendChild(noteSpan);
+        metaDiv.appendChild(sep3);
+        metaDiv.appendChild(durSpan);
+
+        item.appendChild(metaDiv);
+        container.appendChild(item);
+    });
+}
+
+async function loadStandardProjectHistory(refreshTaskId = null) {
+    const tasks = Object.values(standardTasksMap);
     const headers = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
     if (doliEntity) headers['DOLAPIENTITY'] = doliEntity;
 
     try {
-        const allEntries = [];
-        await Promise.all(tasks.map(async (t) => {
-            try {
-                let taskData = t;
-                const needsFetch = (refreshTaskId && String(t.id) === String(refreshTaskId))
-                    || (!Array.isArray(t.lines) && parseInt(t.duration_effective || 0, 10) > 0);
-                if (needsFetch) {
-                    const res = await fetchDoli(`${doliUrl}/tasks/${t.id}?includetimespent=2`, { headers });
-                    if (res.ok) {
-                        taskData = await res.json();
-                        t.lines = Array.isArray(taskData.lines) ? taskData.lines : [];
-                    }
-                }
-                const lines = Array.isArray(taskData.lines) ? taskData.lines : [];
-                const hrProjId = String(profileConfig?.doliHrProject || '');
-                const fkProj = String(taskData.fk_project || taskData.fk_projet || t.fk_project || t.fk_projet || document.getElementById('time-project')?.value || '');
-                if (globalCurrentUserId && (!hrProjId || fkProj !== hrProjId)) {
-                    projectTaskLinesCache[String(t.id)] = {
-                        fkProject: fkProj,
-                        durationEffective: parseInt(taskData.duration_effective || t.duration_effective || 0, 10),
-                        lines: lines.filter(e => String(e.timespent_line_fk_user || '') === String(globalCurrentUserId))
-                    };
-                }
-                lines.forEach(line => {
-                    allEntries.push({
-                        ...line,
-                        _taskId: t.id,
-                        _taskRef: t.ref || ''
-                    });
-                });
-            } catch (_) {}
-        }));
-
-        buildWeekPicker();
-        if (allEntries.length === 0) {
-            container.innerHTML = '';
-            container.classList.add('hidden');
-            return;
-        }
-
-        // Resoudre les initiales des utilisateurs manquants
-        const missingUserIds = [...new Set(
-            allEntries
-                .map(e => String(e.timespent_line_fk_user || ''))
-                .filter(uid => uid && !usersInitialsMap[uid])
-        )];
-
-        if (missingUserIds.length > 0) {
-            await Promise.all(missingUserIds.map(async (uid) => {
+        if (tasks.length > 0) {
+            const hrProjIds = getExcludedHrProjectIds();
+            await Promise.all(tasks.map(async (t) => {
                 try {
-                    const uRes = await fetchDoli(`${doliUrl}/users/${uid}`, { headers });
-                    if (uRes.ok) {
-                        const uData = await uRes.json();
-                        const init = extractUserInitials(uData);
-                        if (init) usersInitialsMap[uid] = init;
+                    let taskData = t;
+                    const needsFetch = (refreshTaskId && String(t.id) === String(refreshTaskId))
+                        || (!Array.isArray(t.lines) && parseInt(t.duration_effective || 0, 10) > 0);
+                    if (needsFetch) {
+                        const res = await fetchDoli(`${doliUrl}/tasks/${t.id}?includetimespent=2`, { headers });
+                        if (res.ok) {
+                            taskData = await res.json();
+                            t.lines = Array.isArray(taskData.lines) ? taskData.lines : [];
+                        }
+                    }
+                    const lines = Array.isArray(taskData.lines) ? taskData.lines : [];
+                    const fkProj = String(taskData.fk_project || taskData.fk_projet || t.fk_project || t.fk_projet || document.getElementById('time-project')?.value || '');
+                    if (globalCurrentUserId && (!fkProj || !hrProjIds.has(fkProj))) {
+                        projectTaskLinesCache[String(t.id)] = {
+                            taskId: String(t.id),
+                            taskRef: decodeHtmlEntities(taskData.ref || t.ref || ''),
+                            taskLabel: decodeHtmlEntities(taskData.label || t.label || ''),
+                            fkProject: fkProj,
+                            durationEffective: parseInt(taskData.duration_effective || t.duration_effective || 0, 10),
+                            lines: lines.filter(e => String(e.timespent_line_fk_user || '') === String(globalCurrentUserId))
+                        };
                     }
                 } catch (_) {}
             }));
         }
-
-        // Tri du plus recent au plus ancien (date decroissante puis id decroissant)
-        allEntries.sort((a, b) => {
-            const tsA = parseInt(a.timespent_line_datehour || a.timespent_line_date || 0, 10);
-            const tsB = parseInt(b.timespent_line_datehour || b.timespent_line_date || 0, 10);
-            if (tsB !== tsA) return tsB - tsA;
-            const idA = parseInt(a.timespent_line_id || a.id || 0, 10);
-            const idB = parseInt(b.timespent_line_id || b.id || 0, 10);
-            return idB - idA;
-        });
-
-        container.innerHTML = '';
-        container.classList.remove('hidden');
-
-        allEntries.forEach(entry => {
-            const lineId = entry.timespent_line_id || entry.id || '';
-            const ts = parseInt(entry.timespent_line_datehour || entry.timespent_line_date || 0, 10);
-            let dateShort = '-';
-            if (ts > 0) {
-                const d = new Date(ts * 1000);
-                const dd = String(d.getDate()).padStart(2, '0');
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const yy = String(d.getFullYear()).slice(-2);
-                dateShort = `${dd}/${mm}/${yy}`;
-            }
-
-            const uid = String(entry.timespent_line_fk_user || '');
-            const initials = usersInitialsMap[uid] || globalCurrentUserInitials || '-';
-            const durStr = formatSecToHHMM(entry.timespent_line_duration || 0);
-            const noteStr = (entry.timespent_line_note || '').trim();
-
-            const item = document.createElement('div');
-            item.className = 'std-hist-item';
-
-            // Ligne unique : jj/mm/aa|LM|Dur?e|Note
-            const metaDiv = document.createElement('div');
-            metaDiv.className = 'std-hist-meta';
-
-            const dateSpan = document.createElement('span');
-            dateSpan.className = 'std-hist-date';
-            dateSpan.textContent = dateShort;
-
-            const sep1 = document.createElement('span');
-            sep1.className = 'std-hist-sep';
-            sep1.textContent = '|';
-
-            const userSpan = document.createElement('span');
-            userSpan.className = 'std-hist-user';
-            userSpan.textContent = initials;
-
-            const sep2 = document.createElement('span');
-            sep2.className = 'std-hist-sep';
-            sep2.textContent = '|';
-
-            const durSpan = document.createElement('span');
-            durSpan.className = 'std-hist-dur';
-            durSpan.textContent = durStr;
-
-            const sep3 = document.createElement('span');
-            sep3.className = 'std-hist-sep';
-            sep3.textContent = '|';
-
-            const noteSpan = document.createElement('span');
-            noteSpan.className = 'std-hist-note';
-            noteSpan.textContent = noteStr || '-';
-            if (noteStr) noteSpan.title = noteStr;
-
-            metaDiv.appendChild(dateSpan);
-            metaDiv.appendChild(sep1);
-            metaDiv.appendChild(userSpan);
-            metaDiv.appendChild(sep2);
-            metaDiv.appendChild(durSpan);
-            metaDiv.appendChild(sep3);
-            metaDiv.appendChild(noteSpan);
-
-            item.appendChild(metaDiv);
-
-            container.appendChild(item);
-        });
+        buildWeekPicker();
+        renderStandardProjectHistory();
     } catch (err) {
         console.warn('Erreur chargement historique projet standard:', err);
     }

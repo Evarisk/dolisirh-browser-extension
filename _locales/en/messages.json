@@ -949,5 +949,8 @@
   },
   "time_monthly_mode": {
     "message": "Monthly"
+  },
+  "nav_open_dolibarr_title": {
+    "message": "Open Dolibarr"
   }
 }

@@ -306,6 +306,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const profileSwitcher = document.getElementById('doli-active-profile');
+            const navFavicon = document.getElementById('nav-favicon');
+            const btnOpenDoli = document.getElementById('btn-open-dolibarr');
+
+            if (p && p.doliUrl && btnOpenDoli) {
+                btnOpenDoli.classList.remove('hidden');
+                const openTitle = chrome.i18n.getMessage('nav_open_dolibarr_title') || 'Ouvrir Dolibarr';
+                btnOpenDoli.title = openTitle;
+                btnOpenDoli.addEventListener('click', () => {
+                    try {
+                        const baseUrl = p.doliUrl.replace(/\/api\/index\.php\/?$/i, '');
+                        const parsed = new URL(baseUrl);
+                        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                            chrome.tabs.create({ url: parsed.href });
+                        }
+                    } catch (_) {}
+                });
+            }
             if (profiles.length >= 1 && profileSwitcher) {
                 profileSwitcher.classList.remove('hidden');
                 profileSwitcher.innerHTML = '';
@@ -321,6 +338,76 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.reload();
                     });
                 });
+            }
+
+            if (p && p.doliUrl && p.doliApiToken && profileSwitcher && !profileSwitcher.classList.contains('hidden') && navFavicon) {
+                const showFavicon = (srcUrl) => {
+                    if (!srcUrl) return;
+                    navFavicon.src = srcUrl;
+                    navFavicon.style.display = 'block';
+                    profileSwitcher.classList.add('has-favicon');
+                };
+
+                navFavicon.addEventListener('error', () => {
+                    navFavicon.src = '../../icon32.png';
+                }, { once: true });
+
+                const cacheKey = `doliLogo_${p.id || 'default'}`;
+                try {
+                    chrome.storage.local.get([cacheKey], (cached) => {
+                        if (!chrome.runtime.lastError && cached && cached[cacheKey]) {
+                            showFavicon(cached[cacheKey]);
+                        }
+                    });
+                } catch (_) {}
+
+                (async () => {
+                    try {
+                        const headers = { 'DOLAPIKEY': p.doliApiToken, 'Accept': 'application/json' };
+                        if (p.doliEntity) headers['DOLAPIENTITY'] = String(p.doliEntity).trim();
+
+                        const compRes = await fetchDoli(`${p.doliUrl}/setup/company`, { headers });
+                        if (!compRes.ok) throw new Error('Company fetch failed');
+                        const compData = await compRes.json();
+
+                        const logoName = compData.logo_squarred || compData.logo;
+                        if (!logoName) throw new Error('No logo found');
+
+                        let filePath = 'logos/' + logoName;
+                        const isSquarred = (logoName === compData.logo_squarred);
+
+                        let docRes = await fetchDoli(`${p.doliUrl}/documents/download?modulepart=mycompany&original_file=${encodeURIComponent(filePath)}`, { headers });
+                        if (!docRes.ok && isSquarred) {
+                            filePath = 'logos/thumbs/' + logoName;
+                            docRes = await fetchDoli(`${p.doliUrl}/documents/download?modulepart=mycompany&original_file=${encodeURIComponent(filePath)}`, { headers });
+                        }
+                        if (!docRes.ok && isSquarred && compData.logo && compData.logo !== compData.logo_squarred) {
+                            filePath = 'logos/' + compData.logo;
+                            docRes = await fetchDoli(`${p.doliUrl}/documents/download?modulepart=mycompany&original_file=${encodeURIComponent(filePath)}`, { headers });
+                        }
+                        if (!docRes.ok) throw new Error('Logo download failed');
+
+                        const docData = await docRes.json();
+                        if (docData && docData.content) {
+                            const contentType = docData['content-type'] || 'image/png';
+                            const dataUri = `data:${contentType};base64,${docData.content}`;
+                            showFavicon(dataUri);
+                            try {
+                                chrome.storage.local.set({ [cacheKey]: dataUri });
+                            } catch (_) {}
+                            return;
+                        }
+                        throw new Error('Empty logo content');
+                    } catch (_) {
+                        try {
+                            const domain = new URL(p.doliUrl).origin;
+                            const fallbackUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                            showFavicon(fallbackUrl);
+                        } catch (_) {
+                            showFavicon('../../icon32.png');
+                        }
+                    }
+                })();
             }
 
             if (p && p.doliUrl && p.doliApiToken) {

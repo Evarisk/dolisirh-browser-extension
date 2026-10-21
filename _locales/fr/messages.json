@@ -973,5 +973,8 @@
   },
   "time_monthly_mode": {
     "message": "Mensuel"
+  },
+  "nav_open_dolibarr_title": {
+    "message": "Ouvrir Dolibarr"
   }
 }
