@@ -21,6 +21,8 @@ let hrTaskLinesCache = {};
 let projectTaskLinesCache = {};
 let ensuredProjectContributors = new Set();
 let ensuredTaskContributors = new Set();
+let thirdpartiesNameMap = {};
+let pendingProjectClientFetches = new Set();
 let calendarMonthDate = new Date();
 
 /**
@@ -102,13 +104,137 @@ function createStatIconSvg(type) {
 }
 
 /**
- * Affiche "- libellé | ⏳ Tps prévu | ⏱️ Tps passé" dans un conteneur inline.
+ * Extrait les 5 derniers temps pointés sur un ensemble de tâches sous forme d'objets structurés.
+ * @param {Array<Object>} tasksList
+ * @returns {Array<{dateShort: string, desc: string, durStr: string}>}
+ */
+function extractLastTimespentEntries(tasksList) {
+    if (!Array.isArray(tasksList) || tasksList.length === 0) return [];
+
+    const allLines = [];
+    tasksList.forEach(t => {
+        if (!t || !Array.isArray(t.lines)) return;
+        const taskRef = decodeHtmlEntities(t.ref || '');
+        const taskLabel = decodeHtmlEntities(t.label || '');
+        t.lines.forEach(line => {
+            const ts = parseInt(line.timespent_line_datehour || line.timespent_line_date || 0, 10);
+            const dur = parseInt(line.timespent_line_duration || 0, 10);
+            if (ts > 0 && dur > 0) {
+                allLines.push({
+                    ...line,
+                    _ts: ts,
+                    _dur: dur,
+                    _taskRef: taskRef,
+                    _taskLabel: taskLabel
+                });
+            }
+        });
+    });
+
+    if (allLines.length === 0) return [];
+
+    allLines.sort((a, b) => {
+        if (b._ts !== a._ts) return b._ts - a._ts;
+        const idA = parseInt(a.timespent_line_id || a.id || 0, 10);
+        const idB = parseInt(b.timespent_line_id || b.id || 0, 10);
+        return idB - idA;
+    });
+
+    return allLines.slice(0, 5).map(entry => {
+        const d = new Date(entry._ts * 1000);
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(-2);
+        const dateShort = `${dd}/${mm}/${yy}`;
+        const durStr = formatSecToHHMM(entry._dur);
+        const noteStr = decodeHtmlEntities((entry.timespent_line_note || '').trim());
+        const rawDesc = noteStr || entry._taskLabel || entry._taskRef || '-';
+        const desc = rawDesc.length > 35 ? `${rawDesc.slice(0, 35)}...` : rawDesc;
+        return { dateShort, desc, durStr };
+    });
+}
+
+/**
+ * Attache ou met à jour l'infobulle structurée (avec durée alignée à droite) sur un élément .is-spent.
+ * @param {HTMLElement|null} spentSpan
+ * @param {Array<Object>} tasksList
+ */
+function attachLastTimespentHover(spentSpan, tasksList) {
+    if (!spentSpan) return;
+    const entries = extractLastTimespentEntries(tasksList);
+    spentSpan._lastEntries = entries;
+
+    const defaultTitle = chrome.i18n.getMessage('std_spent_time_title') || 'Temps pass\u00e9';
+    if (entries.length === 0) {
+        spentSpan.title = defaultTitle;
+    } else {
+        spentSpan.removeAttribute('title');
+    }
+
+    if (spentSpan.dataset.hoverBound === 'true') return;
+    spentSpan.dataset.hoverBound = 'true';
+
+    spentSpan.addEventListener('mouseenter', () => {
+        const list = spentSpan._lastEntries || [];
+        if (list.length === 0) return;
+
+        let pop = document.getElementById('std-spent-popover');
+        if (!pop) {
+            pop = document.createElement('div');
+            pop.id = 'std-spent-popover';
+            pop.className = 'std-spent-popover hidden';
+            document.body.appendChild(pop);
+        }
+
+        pop.textContent = '';
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'std-spent-popover-header';
+        headerDiv.textContent = chrome.i18n.getMessage('std_spent_last_entries_title') || 'Temps pass\u00e9 (5 derniers pointages) :';
+        pop.appendChild(headerDiv);
+
+        list.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'std-spent-popover-row';
+
+            const leftSpan = document.createElement('span');
+            leftSpan.className = 'std-spent-popover-left';
+            leftSpan.textContent = `\u2022 ${item.dateShort} | ${item.desc}`;
+
+            const rightSpan = document.createElement('span');
+            rightSpan.className = 'std-spent-popover-right';
+            rightSpan.textContent = `| ${item.durStr}`;
+
+            row.appendChild(leftSpan);
+            row.appendChild(rightSpan);
+            pop.appendChild(row);
+        });
+
+        pop.classList.remove('hidden');
+        const rect = spentSpan.getBoundingClientRect();
+        const popRect = pop.getBoundingClientRect();
+        let left = rect.left;
+        const maxLeft = Math.max(8, window.innerWidth - popRect.width - 8);
+        if (left > maxLeft) left = maxLeft;
+        pop.style.left = `${Math.max(8, left)}px`;
+        pop.style.top = `${rect.bottom + 4}px`;
+    });
+
+    spentSpan.addEventListener('mouseleave', () => {
+        const pop = document.getElementById('std-spent-popover');
+        if (pop) pop.classList.add('hidden');
+    });
+}
+
+/**
+ * Affiche "- libellé | ⏳ Tps prévu | ⏱️ Tps passé | ↗" dans un conteneur inline.
  * @param {HTMLElement|null} container
  * @param {string} titleText
  * @param {number} plannedSec
  * @param {number} spentSec
+ * @param {Array<Object>} [tasksForTooltip]
+ * @param {string} [targetUrl]
  */
-function renderInlineStats(container, titleText, plannedSec, spentSec) {
+function renderInlineStats(container, titleText, plannedSec, spentSec, tasksForTooltip = [], targetUrl = '') {
     if (!container) return;
     container.innerHTML = '';
     if (!titleText && !plannedSec && !spentSec) {
@@ -117,10 +243,20 @@ function renderInlineStats(container, titleText, plannedSec, spentSec) {
     }
     container.classList.remove('hidden');
 
-    const titleSpan = document.createElement('span');
-    titleSpan.className = 'std-stat-title';
+    const openTitle = chrome.i18n.getMessage('time_card_open_doli_title') || 'Ouvrir dans Dolibarr';
+
+    const titleSpan = document.createElement(targetUrl ? 'a' : 'span');
+    titleSpan.className = targetUrl ? 'std-stat-title is-link' : 'std-stat-title';
     titleSpan.textContent = `- ${titleText || ''}`;
-    titleSpan.title = titleText || '';
+    titleSpan.title = targetUrl ? `${titleText || ''} — ${openTitle}` : (titleText || '');
+    if (targetUrl) {
+        titleSpan.href = '#';
+        titleSpan.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            chrome.tabs.create({ url: targetUrl });
+        });
+    }
     container.appendChild(titleSpan);
 
     const sep1 = document.createElement('span');
@@ -130,7 +266,7 @@ function renderInlineStats(container, titleText, plannedSec, spentSec) {
 
     const plannedSpan = document.createElement('span');
     plannedSpan.className = 'std-stat-item is-planned';
-    plannedSpan.title = chrome.i18n.getMessage('std_planned_time_title') || 'Temps prévu';
+    plannedSpan.title = chrome.i18n.getMessage('std_planned_time_title') || 'Temps pr\u00e9vu';
     plannedSpan.appendChild(createStatIconSvg('planned'));
     const plannedTxt = document.createElement('span');
     plannedTxt.textContent = formatSecToHHMM(plannedSec);
@@ -144,12 +280,50 @@ function renderInlineStats(container, titleText, plannedSec, spentSec) {
 
     const spentSpan = document.createElement('span');
     spentSpan.className = 'std-stat-item is-spent';
-    spentSpan.title = chrome.i18n.getMessage('std_spent_time_title') || 'Temps passé';
     spentSpan.appendChild(createStatIconSvg('spent'));
     const spentTxt = document.createElement('span');
     spentTxt.textContent = formatSecToHHMM(spentSec);
     spentSpan.appendChild(spentTxt);
+    attachLastTimespentHover(spentSpan, tasksForTooltip);
     container.appendChild(spentSpan);
+
+    if (targetUrl) {
+        const sep3 = document.createElement('span');
+        sep3.className = 'std-stat-sep';
+        sep3.textContent = '|';
+        container.appendChild(sep3);
+
+        const openLink = document.createElement('a');
+        openLink.className = 'std-stat-open-link';
+        openLink.href = '#';
+        openLink.title = openTitle;
+        const extSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        extSvg.setAttribute('width', '12');
+        extSvg.setAttribute('height', '12');
+        extSvg.setAttribute('viewBox', '0 0 24 24');
+        extSvg.setAttribute('fill', 'none');
+        extSvg.setAttribute('stroke', 'currentColor');
+        extSvg.setAttribute('stroke-width', '2');
+        extSvg.setAttribute('stroke-linecap', 'round');
+        extSvg.setAttribute('stroke-linejoin', 'round');
+        const pBox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pBox.setAttribute('d', 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6');
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        poly.setAttribute('points', '15 3 21 3 21 9');
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', '10'); line.setAttribute('y1', '14');
+        line.setAttribute('x2', '21'); line.setAttribute('y2', '3');
+        extSvg.appendChild(pBox);
+        extSvg.appendChild(poly);
+        extSvg.appendChild(line);
+        openLink.appendChild(extSvg);
+        openLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            chrome.tabs.create({ url: targetUrl });
+        });
+        container.appendChild(openLink);
+    }
 }
 
 // ─── Utilitaire : formate une date en YYYY-MM-DD ────────────────────────────
@@ -433,7 +607,14 @@ function buildWeekPicker() {
 
         let stateClass = 'cal-day-grey';
         let statusText = '\u00c0 venir';
-        if ((expectedSec > 0 && (isProjectMode ? totalDaySec >= expectedSec : totalDaySec === expectedSec)) || (expectedSec === 0 && totalDaySec > 0)) {
+        if (expectedSec > 0 && totalDaySec === expectedSec) {
+            stateClass = 'cal-day-ok';
+            statusText = 'OK';
+        } else if (isProjectMode && totalDaySec > expectedSec) {
+            stateClass = 'cal-day-over';
+            const diff = totalDaySec - expectedSec;
+            statusText = `+${formatSecToHHMM(diff)}`;
+        } else if (!isProjectMode && expectedSec === 0 && totalDaySec > 0) {
             stateClass = 'cal-day-ok';
             statusText = 'OK';
         } else if ((d <= today && expectedSec > 0 && totalDaySec !== expectedSec) || (d > today && totalDaySec > 0 && totalDaySec !== expectedSec)) {
@@ -560,8 +741,13 @@ function updateHrProjectInfo() {
         return;
     }
 
-    if (infoBlock) infoBlock.style.display = '';
-    if (counterBlock) counterBlock.style.display = '';
+    if (currentMode === 'standard') {
+        if (infoBlock) infoBlock.style.display = 'none';
+        if (counterBlock) counterBlock.style.display = 'none';
+    } else {
+        if (infoBlock) infoBlock.style.display = '';
+        if (counterBlock) counterBlock.style.display = currentMode === 'monthly' ? 'none' : '';
+    }
 
     // Afficher la référence du projet RH
     if (label) {
@@ -1390,7 +1576,9 @@ function updateSelectedTaskStats(taskId) {
     const t = standardTasksMap[String(taskId)];
     const planned = parseInt(t.planned_workload || 0, 10);
     const spent = parseInt(t.duration_effective || 0, 10);
-    renderInlineStats(taskStatsEl, t.label || t.ref || '', planned, spent);
+    const baseUrl = doliUrl.replace(/\/api\/index\.php\/?$/i, '');
+    const taskUrl = `${baseUrl}/projet/tasks/task.php?id=${encodeURIComponent(taskId)}`;
+    renderInlineStats(taskStatsEl, t.label || t.ref || '', planned, spent, [t], taskUrl);
 }
 
 /**
@@ -1700,6 +1888,65 @@ function isSpjTask(t, spjTargetLabel = '') {
 }
 
 /**
+ * Retourne les options du CustomSelect pour le selecteur de tache (#time-task) avec creation a la volee.
+ * @returns {Object}
+ */
+function getTaskCustomSelectOptions() {
+    return {
+        onCreate: handleCreateCustomTaskFromSearch,
+        createButtonTitle: chrome.i18n.getMessage('std_create_custom_task_btn_title') || 'Cr\u00e9er la t\u00e2che'
+    };
+}
+
+/**
+ * Cr\u00e9e une nouvelle t\u00e2che sur le projet s\u00e9lectionn\u00e9 \u00e0 partir du texte saisi dans la recherche de t\u00e2che,
+ * puis la s\u00e9lectionne automatiquement.
+ * @param {string} rawTaskLabel
+ * @returns {Promise<void>}
+ */
+async function handleCreateCustomTaskFromSearch(rawTaskLabel) {
+    const projectId = document.getElementById('time-project')?.value;
+    const select = document.getElementById('time-task');
+    const statusDiv = document.getElementById('time-status-std');
+    const cleanLabel = (rawTaskLabel || '').trim();
+    if (!projectId || !select || !cleanLabel) return;
+
+    const headers = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
+    if (doliEntity) headers['DOLAPIENTITY'] = doliEntity;
+
+    try {
+        const createdTask = await createDefaultSpjTask(projectId, cleanLabel, headers);
+        if (createdTask && createdTask.id) {
+            createdTask.label = decodeHtmlEntities(createdTask.label || cleanLabel);
+            createdTask.ref = decodeHtmlEntities(createdTask.ref || '');
+            standardTasksMap[String(createdTask.id)] = createdTask;
+
+            const opt = document.createElement('option');
+            opt.value = createdTask.id;
+            opt.textContent = `${createdTask.ref ? createdTask.ref + ' - ' : ''}${createdTask.label}`;
+            select.appendChild(opt);
+            select.disabled = false;
+
+            const proj = standardProjectsMap[String(projectId)];
+            const projTitle = proj ? (proj.title || proj.ref || '') : '';
+            const spjTargetLabel = `SPJ_${projTitle}`;
+            const btnCreateSpj = document.getElementById('btn-create-spj-task');
+            if (btnCreateSpj && isSpjTask(createdTask, spjTargetLabel)) {
+                btnCreateSpj.disabled = true;
+                btnCreateSpj.title = chrome.i18n.getMessage('std_spj_already_exists_title') || 'La t\u00e2che SPJ_ existe d\u00e9j\u00e0 sur ce projet';
+            }
+
+            selectStandardTaskById(createdTask.id);
+        } else if (statusDiv) {
+            statusDiv.style.color = '#e74c3c';
+            statusDiv.textContent = chrome.i18n.getMessage('std_spj_create_error') || 'Erreur lors de la cr\u00e9ation de la t\u00e2che';
+        }
+    } catch (err) {
+        console.warn('Erreur cr\u00e9ation t\u00e2che depuis la recherche:', err);
+    }
+}
+
+/**
  * S?lectionne une t?che dans le select standard et met ? jour le CustomSelect + statistiques.
  * @param {string|number} taskId
  */
@@ -1724,7 +1971,7 @@ function selectStandardTaskById(taskId) {
     select.value = matchedIndex > 0 ? targetVal : '';
 
     if (!window.timeTaskSelect) {
-        window.timeTaskSelect = new CustomSelect(select);
+        window.timeTaskSelect = new CustomSelect(select, getTaskCustomSelectOptions());
     } else {
         window.timeTaskSelect.update();
     }
@@ -1886,13 +2133,15 @@ async function loadStandardTasks(projectId) {
             }
         }
 
-        renderInlineStats(projStatsEl, projTitle, totalPlanned, totalSpent);
+        const baseUrl = doliUrl.replace(/\/api\/index\.php\/?$/i, '');
+        const projUrl = `${baseUrl}/projet/card.php?id=${encodeURIComponent(projectId)}`;
+        renderInlineStats(projStatsEl, projTitle, totalPlanned, totalSpent, Object.values(standardTasksMap), projUrl);
         selectStandardTaskById(preselectedTaskId);
         loadStandardProjectHistory();
     } catch(e) {
         console.error('Error fetching standard tasks', e);
         if (!window.timeTaskSelect) {
-            window.timeTaskSelect = new CustomSelect(select);
+            window.timeTaskSelect = new CustomSelect(select, getTaskCustomSelectOptions());
         } else {
             window.timeTaskSelect.update();
         }
@@ -1907,6 +2156,140 @@ async function loadStandardTasks(projectId) {
  * @returns {Promise<void>}
  */
 /**
+ * Construit le texte d'infobulle (Client, Projet, Tâche) pour le picto d'une tâche dans l'historique.
+ * @param {string|number} taskId
+ * @param {string} taskRef
+ * @param {string} taskLabel
+ * @param {string|number} fkProject
+ * @returns {string}
+ */
+function buildTaskHistoryTooltip(taskId, taskRef, taskLabel, fkProject) {
+    const projIdStr = String(fkProject || '');
+    const proj = standardProjectsMap[projIdStr]
+        || allLoadedProjects.find(p => String(p.id) === projIdStr);
+
+    const socId = proj ? String(proj.socid || proj.fk_soc || '') : '';
+    const clientName = (socId && socId !== '0')
+        ? (thirdpartiesNameMap[socId] || decodeHtmlEntities(proj.thirdparty_name || ''))
+        : '';
+
+    const projRef = proj ? decodeHtmlEntities(proj.ref || '') : '';
+    const projTitle = proj ? decodeHtmlEntities(proj.title || '') : '';
+
+    const clientLabel = chrome.i18n.getMessage('std_hist_tooltip_client') || 'Tiers';
+    const projectLabel = chrome.i18n.getMessage('std_hist_tooltip_project') || 'Projet';
+    const taskTitleLabel = chrome.i18n.getMessage('std_hist_tooltip_task') || 'T\u00e2che';
+
+    const tooltipParts = [];
+    if (clientName) {
+        tooltipParts.push(`${clientLabel} : ${clientName}`);
+    }
+    if (projRef || projTitle) {
+        tooltipParts.push(`${projectLabel} : ${projRef}${projTitle ? (projRef ? ' - ' : '') + projTitle : ''}`);
+    }
+    if (taskRef || taskLabel) {
+        tooltipParts.push(`${taskTitleLabel} : ${taskRef}${taskLabel ? (taskRef ? ' - ' : '') + taskLabel : ''}`);
+    }
+
+    return tooltipParts.join('\n') || (chrome.i18n.getMessage('time_card_open_doli_title') || 'Ouvrir dans Dolibarr');
+}
+
+/**
+ * Met à jour les infobulles des liens d'historique associés à un projet donné.
+ * @param {string|number} fkProject
+ */
+function refreshHistoryTooltipsForProject(fkProject) {
+    const projIdStr = String(fkProject || '');
+    if (!projIdStr) return;
+    const container = document.getElementById('std-project-history');
+    if (!container) return;
+    const links = container.querySelectorAll('.std-hist-obj-link');
+    links.forEach(link => {
+        if (link.dataset.fkProject === projIdStr) {
+            link.title = buildTaskHistoryTooltip(
+                link.dataset.taskId || '',
+                link.dataset.taskRef || '',
+                link.dataset.taskLabel || '',
+                projIdStr
+            );
+        }
+    });
+}
+
+/**
+ * Résout de manière asynchrone le projet et le tiers (client) associé pour enrichir l'infobulle.
+ * @param {string|number} fkProject
+ * @returns {Promise<void>}
+ */
+async function resolveProjectAndClientForHistory(fkProject) {
+    const projIdStr = String(fkProject || '');
+    if (!projIdStr || projIdStr === '0' || !doliUrl || !apiToken) return;
+    if (pendingProjectClientFetches.has(`proj_${projIdStr}`)) return;
+    pendingProjectClientFetches.add(`proj_${projIdStr}`);
+
+    try {
+        const headers = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
+        if (doliEntity !== '' && doliEntity !== null && doliEntity !== undefined) {
+            headers['DOLAPIENTITY'] = String(doliEntity);
+        }
+
+        let proj = standardProjectsMap[projIdStr]
+            || allLoadedProjects.find(p => String(p.id) === projIdStr);
+
+        if (!proj) {
+            try {
+                const pRes = await fetchDoli(`${doliUrl}/projects/${encodeURIComponent(projIdStr)}`, { headers });
+                if (pRes && pRes.ok) {
+                    const pData = await pRes.json();
+                    if (pData && pData.id) {
+                        proj = pData;
+                        standardProjectsMap[projIdStr] = pData;
+                        if (!allLoadedProjects.some(p => String(p.id) === projIdStr)) {
+                            allLoadedProjects.push(pData);
+                        }
+                        refreshHistoryTooltipsForProject(projIdStr);
+                    }
+                }
+            } catch (_) {
+                // Ignorer si le projet n'est pas accessible
+            }
+        }
+
+        const socId = proj ? String(proj.socid || proj.fk_soc || '') : '';
+        if (socId && socId !== '0' && thirdpartiesNameMap[socId] === undefined) {
+            try {
+                let socRes = await fetchDoli(`${doliUrl}/thirdparties/${encodeURIComponent(socId)}`, { headers });
+                if ((!socRes || !socRes.ok) && headers['DOLAPIENTITY']) {
+                    const fallbackHeaders = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
+                    socRes = await fetchDoli(`${doliUrl}/thirdparties/${encodeURIComponent(socId)}`, { headers: fallbackHeaders });
+                }
+                if (socRes && socRes.ok) {
+                    const socData = await socRes.json();
+                    const codeClient = decodeHtmlEntities(socData ? (socData.code_client || socData.code_fournisseur || '') : '');
+                    const cleanName = decodeHtmlEntities(socData ? (socData.name || socData.nom || '') : '');
+                    const cleanAlias = decodeHtmlEntities(socData ? (socData.name_alias || '') : '');
+                    const namePart = cleanName
+                        ? (cleanAlias && cleanAlias !== cleanName ? `${cleanName} (${cleanAlias})` : cleanName)
+                        : '';
+                    thirdpartiesNameMap[socId] = [codeClient, namePart].filter(Boolean).join(' - ');
+                } else {
+                    thirdpartiesNameMap[socId] = '';
+                }
+            } catch (_) {
+                thirdpartiesNameMap[socId] = '';
+            }
+            refreshHistoryTooltipsForProject(projIdStr);
+        } else if (socId && socId !== '0' && thirdpartiesNameMap[socId]) {
+            refreshHistoryTooltipsForProject(projIdStr);
+        }
+    } catch (_) {
+        // Ignorer les erreurs réseau non bloquantes pour l'infobulle
+    } finally {
+        pendingProjectClientFetches.delete(`proj_${projIdStr}`);
+    }
+}
+
+/**
  * Cree un element lien style Dolibarr getNomUrl(1) pour une tache/projet.
  * @param {string|number} taskId
  * @param {string} taskRef
@@ -1918,21 +2301,25 @@ function createTaskNomUrlElement(taskId, taskRef, taskLabel, fkProject) {
     const link = document.createElement('a');
     link.className = 'std-hist-obj-link';
     link.href = '#';
+    link.dataset.taskId = String(taskId || '');
+    link.dataset.taskRef = String(taskRef || '');
+    link.dataset.taskLabel = String(taskLabel || '');
+    link.dataset.fkProject = String(fkProject || '');
 
-    const proj = standardProjectsMap[String(fkProject || '')]
-        || allLoadedProjects.find(p => String(p.id) === String(fkProject || ''));
-    const projRef = proj ? decodeHtmlEntities(proj.ref || '') : '';
-    const projTitle = proj ? decodeHtmlEntities(proj.title || '') : '';
+    link.title = buildTaskHistoryTooltip(taskId, taskRef, taskLabel, fkProject);
 
-    const tooltipParts = [];
-    if (projRef || projTitle) tooltipParts.push(`Projet : ${projRef}${projTitle ? ' - ' + projTitle : ''}`);
-    if (taskRef || taskLabel) tooltipParts.push(`T\u00e2che : ${taskRef}${taskLabel ? ' - ' + taskLabel : ''}`);
-    link.title = tooltipParts.join('\n') || (chrome.i18n.getMessage('time_card_open_doli_title') || 'Ouvrir dans Dolibarr');
+    const projIdStr = String(fkProject || '');
+    const proj = standardProjectsMap[projIdStr]
+        || allLoadedProjects.find(p => String(p.id) === projIdStr);
+    const socId = proj ? String(proj.socid || proj.fk_soc || '') : '';
+    if (projIdStr && (!proj || (socId && socId !== '0' && thirdpartiesNameMap[socId] === undefined))) {
+        resolveProjectAndClientForHistory(projIdStr);
+    }
 
     // Picto tache Dolibarr (clipboard-check)
     const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    iconSvg.setAttribute('width', '12');
-    iconSvg.setAttribute('height', '12');
+    iconSvg.setAttribute('width', '13');
+    iconSvg.setAttribute('height', '13');
     iconSvg.setAttribute('viewBox', '0 0 24 24');
     iconSvg.setAttribute('fill', 'none');
     iconSvg.setAttribute('stroke', 'currentColor');
@@ -1951,11 +2338,7 @@ function createTaskNomUrlElement(taskId, taskRef, taskLabel, fkProject) {
     iconSvg.appendChild(pathClip);
     iconSvg.appendChild(polyCheck);
 
-    const refTxt = document.createElement('span');
-    refTxt.textContent = taskRef || projRef || `#${taskId}`;
-
     link.appendChild(iconSvg);
-    link.appendChild(refTxt);
 
     link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2123,6 +2506,16 @@ async function loadStandardProjectHistory(refreshTaskId = null) {
                     }
                 } catch (_) {}
             }));
+
+            const projStatsSpentEl = document.querySelector('#std-project-stats .std-stat-item.is-spent');
+            if (projStatsSpentEl) {
+                attachLastTimespentHover(projStatsSpentEl, Object.values(standardTasksMap));
+            }
+            const curTaskId = document.getElementById('time-task')?.value;
+            const taskStatsSpentEl = document.querySelector('#std-task-stats .std-stat-item.is-spent');
+            if (taskStatsSpentEl && curTaskId && standardTasksMap[String(curTaskId)]) {
+                attachLastTimespentHover(taskStatsSpentEl, [standardTasksMap[String(curTaskId)]]);
+            }
         }
         buildWeekPicker();
         renderStandardProjectHistory();
@@ -2649,7 +3042,9 @@ async function submitTime() {
                         pSpent += parseInt(tk.duration_effective || 0, 10);
                     });
                     const proj = standardProjectsMap[String(projId)];
-                    renderInlineStats(document.getElementById('std-project-stats'), proj ? (proj.title || proj.ref || '') : '', pPlanned, pSpent);
+                    const baseUrl = doliUrl.replace(/\/api\/index\.php\/?$/i, '');
+                    const projUrl = `${baseUrl}/projet/card.php?id=${encodeURIComponent(projId)}`;
+                    renderInlineStats(document.getElementById('std-project-stats'), proj ? (proj.title || proj.ref || '') : '', pPlanned, pSpent, Object.values(standardTasksMap), projUrl);
                 }
                 loadStandardProjectHistory(taskId);
             }

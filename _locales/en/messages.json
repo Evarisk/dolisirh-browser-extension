@@ -952,5 +952,20 @@
   },
   "nav_open_dolibarr_title": {
     "message": "Open Dolibarr"
+  },
+  "std_hist_tooltip_client": {
+    "message": "Thirdparty"
+  },
+  "std_hist_tooltip_project": {
+    "message": "Project"
+  },
+  "std_hist_tooltip_task": {
+    "message": "Task"
+  },
+  "std_spent_last_entries_title": {
+    "message": "Spent time (last 5 entries):"
+  },
+  "std_create_custom_task_btn_title": {
+    "message": "Create task"
   }
 }
