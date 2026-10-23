@@ -807,9 +807,14 @@ a.rt-ref:hover {
     position: sticky;
     top: 0;
     background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 .custom-search-box input {
     width: 100%;
+    flex: 1;
+    min-width: 0;
     padding: 6px 10px;
     font-size: 13px;
     border: 1px solid #cbd5e1;
@@ -820,6 +825,34 @@ a.rt-ref:hover {
 .custom-search-box input:focus {
     outline: none;
     border-color: #3498db;
+}
+button.custom-search-create-btn {
+    width: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #0259a8;
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    cursor: pointer;
+    flex: 0 0 28px;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+button.custom-search-create-btn:hover:not(:disabled) {
+    background-color: #0259a8;
+    border-color: #0259a8;
+    color: #ffffff;
+}
+button.custom-search-create-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 .custom-option {
     padding: 8px 12px;
@@ -2633,6 +2666,29 @@ button.ts-hr-star-btn.ts-star-loading {
     font-weight: 600;
     flex-shrink: 1;
     min-width: 0;
+    text-decoration: none;
+}
+
+.std-inline-stats .std-stat-title.is-link:hover {
+    color: #0259a8;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.std-inline-stats .std-stat-open-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #0259a8;
+    text-decoration: none;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.std-inline-stats .std-stat-open-link:hover {
+    color: #0369a1;
+    transform: translateY(-0.5px);
 }
 
 .std-inline-stats .std-stat-sep {
@@ -2656,6 +2712,54 @@ button.ts-hr-star-btn.ts-star-loading {
 
 .std-inline-stats .std-stat-item.is-spent svg {
     color: #10b981;
+}
+.std-inline-stats .std-stat-item.is-spent {
+    cursor: default;
+}
+.std-spent-popover {
+    position: fixed;
+    z-index: 9999;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    padding: 6px 9px;
+    min-width: 230px;
+    max-width: 340px;
+    font-size: 11.5px;
+    color: #1e293b;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+.std-spent-popover-header {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.std-spent-popover-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    line-height: 1.45;
+    white-space: nowrap;
+}
+.std-spent-popover-left {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #334155;
+}
+.std-spent-popover-right {
+    flex-shrink: 0;
+    margin-left: auto;
+    text-align: right;
+    font-weight: 600;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
 }
 .std-note-action-row {
     display: flex;
@@ -3025,11 +3129,17 @@ button.ts-cal-day.is-today {
     box-shadow: 0 0 0 2px #0f172a !important;
 }
 
-/* ?tats couleur : Vert (OK), Rouge (Manque/?cart), Gris (? venir / 0h) */
+/* États couleur : Vert (OK), Orange (Dépassement), Rouge (Manque/Écart), Gris (À venir / 0h) */
 button.ts-cal-day.cal-day-ok {
     background: #dcfce7 !important;
     border-color: #22c55e !important;
     color: #14532d !important;
+}
+
+button.ts-cal-day.cal-day-over {
+    background: #ffedd5 !important;
+    border-color: #f97316 !important;
+    color: #9a3412 !important;
 }
 
 button.ts-cal-day.cal-day-ko {

@@ -976,5 +976,20 @@
   },
   "nav_open_dolibarr_title": {
     "message": "Ouvrir Dolibarr"
+  },
+  "std_hist_tooltip_client": {
+    "message": "Tiers"
+  },
+  "std_hist_tooltip_project": {
+    "message": "Projet"
+  },
+  "std_hist_tooltip_task": {
+    "message": "Tâche"
+  },
+  "std_spent_last_entries_title": {
+    "message": "Temps passé (5 derniers pointages) :"
+  },
+  "std_create_custom_task_btn_title": {
+    "message": "Créer la tâche"
   }
 }

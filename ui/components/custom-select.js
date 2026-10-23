@@ -4,17 +4,22 @@ export class CustomSelect {
      * @param {object} [options]
      * @param {function(string): Promise<void>} [options.onSearch] - Async callback appelé quand l'utilisateur tape.
      *        Reçoit la chaîne de recherche. Doit repeupler les options du <select>, puis le composant re-rend.
+     * @param {function(string): Promise<void>} [options.onCreate] - Async callback appelé au clic sur le bouton '+' quand un texte est saisi.
+     * @param {string} [options.createButtonTitle] - Infobulle du bouton '+'.
      */
     constructor(selectElement, options = {}) {
         this.selectElement = selectElement;
         this.container = selectElement.parentElement;
         this.onSearch = options.onSearch || null;
+        this.onCreate = options.onCreate || null;
+        this.createButtonTitle = options.createButtonTitle || '';
         this._searchDebounce = null;
 
         this.wrapper = null;
         this.trigger = null;
         this.optionsContainer = null;
         this.searchInput = null;
+        this.createBtn = null;
         this.optionsList = null;
 
         this.init();
@@ -56,6 +61,33 @@ export class CustomSelect {
             ? (chrome.i18n.getMessage('popup_jsph_134') || 'Rechercher...')
             : 'Rechercher...';
         searchBox.appendChild(this.searchInput);
+
+        if (this.onCreate) {
+            this.createBtn = document.createElement('button');
+            this.createBtn.type = 'button';
+            this.createBtn.className = 'custom-search-create-btn hidden';
+            this.createBtn.title = this.createButtonTitle || 'Cr\u00e9er';
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '14');
+            svg.setAttribute('height', '14');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            svg.setAttribute('stroke-width', '2.5');
+            svg.setAttribute('stroke-linecap', 'round');
+            svg.setAttribute('stroke-linejoin', 'round');
+            const l1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            l1.setAttribute('x1', '12'); l1.setAttribute('y1', '5');
+            l1.setAttribute('x2', '12'); l1.setAttribute('y2', '19');
+            const l2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            l2.setAttribute('x1', '5'); l2.setAttribute('y1', '12');
+            l2.setAttribute('x2', '19'); l2.setAttribute('y2', '12');
+            svg.appendChild(l1);
+            svg.appendChild(l2);
+            this.createBtn.appendChild(svg);
+            searchBox.appendChild(this.createBtn);
+        }
 
         this.optionsList = document.createElement('div');
         this.optionsList.className = 'custom-options';
@@ -134,6 +166,7 @@ export class CustomSelect {
             this.trigger.classList.toggle('open');
             if (this.wrapper.classList.contains('open')) {
                 this.searchInput.value = '';
+                if (this.createBtn) this.createBtn.classList.add('hidden');
                 this.renderOptions();
                 setTimeout(() => this.searchInput.focus(), 100);
             }
@@ -141,6 +174,17 @@ export class CustomSelect {
 
         this.searchInput.addEventListener('input', (e) => {
             const query = e.target.value;
+            const trimmed = query.trim();
+
+            if (this.createBtn) {
+                if (trimmed.length > 0) {
+                    this.createBtn.classList.remove('hidden');
+                    const baseTitle = this.createButtonTitle || 'Cr\u00e9er';
+                    this.createBtn.title = `${baseTitle} "${trimmed}"`;
+                } else {
+                    this.createBtn.classList.add('hidden');
+                }
+            }
 
             if (this.onSearch) {
                 // Mode recherche serveur : debounce 400ms
@@ -164,6 +208,22 @@ export class CustomSelect {
                 this.renderOptions(query);
             }
         });
+
+        if (this.createBtn && this.onCreate) {
+            this.createBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const trimmed = (this.searchInput.value || '').trim();
+                if (!trimmed) return;
+                this.createBtn.disabled = true;
+                try {
+                    await this.onCreate(trimmed);
+                    this.close();
+                } finally {
+                    if (this.createBtn) this.createBtn.disabled = false;
+                }
+            });
+        }
 
         document.addEventListener('click', (e) => {
             if (!this.wrapper.contains(e.target)) {
