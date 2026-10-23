@@ -19,6 +19,8 @@ let allLoadedProjects = [];
 let entitiesLabelMap = {};
 let hrTaskLinesCache = {};
 let projectTaskLinesCache = {};
+let ensuredProjectContributors = new Set();
+let ensuredTaskContributors = new Set();
 let calendarMonthDate = new Date();
 
 /**
@@ -2374,7 +2376,10 @@ function createHrCard(taskId, ref, label, type) {
             const pad = n => String(n).padStart(2, '0');
             const dateStr = `${dateObj.getFullYear()}-${pad(dateObj.getMonth()+1)}-${pad(dateObj.getDate())} 00:00:00`;
 
-            const res = await fetchDoli(`${doliUrl}/tasks/${taskId}/addtimespent`, {
+            const hrProjectId = profileConfig?.doliHrProject || '';
+            await ensureUserContributorOnProjectAndTask(hrProjectId, taskId, reqHeaders);
+
+        const res = await fetchDoli(`${doliUrl}/tasks/${taskId}/addtimespent`, {
                 method: 'POST',
                 headers: reqHeaders,
                 body: JSON.stringify({
@@ -2441,6 +2446,135 @@ function createHrCard(taskId, ref, label, type) {
 }
 
 
+/**
+ * S'assure que l'utilisateur courant qui pointe est bien ajouté comme contact interne
+ * avec le rôle contributeur sur le projet (PROJECTCONTRIBUTOR) et sur la tâche (TASKCONTRIBUTOR).
+ * @param {string|number} projectId - ID du projet Dolibarr
+ * @param {string|number} taskId - ID de la tâche Dolibarr
+ * @param {Object} headers - En-têtes HTTP d'authentification Dolibarr
+ * @returns {Promise<void>}
+ */
+async function ensureUserContributorOnProjectAndTask(projectId, taskId, headers) {
+    try {
+        const getHeaders = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
+        if (doliEntity) getHeaders['DOLAPIENTITY'] = doliEntity;
+
+        if (!globalCurrentUserId) {
+            const userRes = await fetchDoli(`${doliUrl}/users/info`, { headers: getHeaders });
+            if (userRes.ok) {
+                const userInfo = await userRes.json();
+                globalCurrentUserId = String(userInfo.id || userInfo.rowid || '');
+                globalCurrentUserInitials = extractUserInitials(userInfo);
+                if (globalCurrentUserId && globalCurrentUserInitials) {
+                    usersInitialsMap[globalCurrentUserId] = globalCurrentUserInitials;
+                }
+            }
+        }
+
+        const userIdNum = parseInt(globalCurrentUserId, 10);
+        if (!userIdNum || userIdNum <= 0) return;
+
+        const postHeaders = {
+            ...getHeaders,
+            ...(headers || {}),
+            'Content-Type': 'application/json'
+        };
+
+        const entityKey = String(doliEntity || '1');
+        const promises = [];
+
+        if (projectId) {
+            const projKey = `${entityKey}:${projectId}:${userIdNum}`;
+            if (!ensuredProjectContributors.has(projKey)) {
+                promises.push((async () => {
+                    try {
+                        let alreadyOnProject = false;
+                        const contactsRes = await fetchDoli(`${doliUrl}/projects/${projectId}/contacts`, { headers: getHeaders });
+                        if (contactsRes.ok) {
+                            const contacts = await contactsRes.json();
+                            if (Array.isArray(contacts)) {
+                                alreadyOnProject = contacts.some(c =>
+                                    String(c.source || '').toLowerCase() === 'internal' &&
+                                    String(c.id || c.fk_socpeople || '') === String(userIdNum) &&
+                                    String(c.code || '').toUpperCase() === 'PROJECTCONTRIBUTOR'
+                                );
+                            }
+                        }
+
+                        if (!alreadyOnProject) {
+                            const addProjRes = await fetchDoli(`${doliUrl}/projects/${projectId}/contacts`, {
+                                method: 'POST',
+                                headers: postHeaders,
+                                body: JSON.stringify({
+                                    fk_socpeople: userIdNum,
+                                    type_contact: 'PROJECTCONTRIBUTOR',
+                                    source: 'internal',
+                                    notrigger: 0
+                                })
+                            });
+                            if (addProjRes.ok) {
+                                ensuredProjectContributors.add(projKey);
+                            }
+                        } else {
+                            ensuredProjectContributors.add(projKey);
+                        }
+                    } catch (errProj) {
+                        console.warn('[ReedCRM] Impossible d\'ajouter le contributeur sur le projet:', errProj);
+                    }
+                })());
+            }
+        }
+
+        if (taskId) {
+            const taskKey = `${entityKey}:${taskId}:${userIdNum}`;
+            if (!ensuredTaskContributors.has(taskKey)) {
+                promises.push((async () => {
+                    try {
+                        let alreadyOnTask = false;
+                        const contactsRes = await fetchDoli(`${doliUrl}/tasks/${taskId}/contacts`, { headers: getHeaders });
+                        if (contactsRes.ok) {
+                            const contacts = await contactsRes.json();
+                            if (Array.isArray(contacts)) {
+                                alreadyOnTask = contacts.some(c =>
+                                    String(c.source || '').toLowerCase() === 'internal' &&
+                                    String(c.id || c.fk_socpeople || '') === String(userIdNum) &&
+                                    String(c.code || '').toUpperCase() === 'TASKCONTRIBUTOR'
+                                );
+                            }
+                        }
+
+                        if (!alreadyOnTask) {
+                            const addTaskRes = await fetchDoli(`${doliUrl}/tasks/${taskId}/contacts`, {
+                                method: 'POST',
+                                headers: postHeaders,
+                                body: JSON.stringify({
+                                    fk_socpeople: userIdNum,
+                                    type_contact: 'TASKCONTRIBUTOR',
+                                    source: 'internal',
+                                    notrigger: 0
+                                })
+                            });
+                            if (addTaskRes.ok) {
+                                ensuredTaskContributors.add(taskKey);
+                            }
+                        } else {
+                            ensuredTaskContributors.add(taskKey);
+                        }
+                    } catch (errTask) {
+                        console.warn('[ReedCRM] Impossible d\'ajouter le contributeur sur la tâche:', errTask);
+                    }
+                })());
+            }
+        }
+
+        if (promises.length > 0) {
+            await Promise.all(promises);
+        }
+    } catch (err) {
+        console.warn('[ReedCRM] Erreur lors de l\'affectation du contributeur:', err);
+    }
+}
+
 async function submitTime() {
     const btn = document.getElementById('btn-submit-time-std') || document.getElementById('btn-submit-time');
     const statusDiv = document.getElementById('time-status-std') || document.getElementById('time-status');
@@ -2488,6 +2622,11 @@ async function submitTime() {
     if (doliEntity) headers['DOLAPIENTITY'] = doliEntity;
 
     try {
+        const projectId = currentMode === 'standard'
+            ? (document.getElementById('time-project')?.value || standardTasksMap[String(taskId)]?.fk_project || standardTasksMap[String(taskId)]?.fk_projet || '')
+            : (profileConfig?.doliHrProject || '');
+        await ensureUserContributorOnProjectAndTask(projectId, taskId, headers);
+
         const res = await fetchDoli(`${doliUrl}/tasks/${taskId}/addtimespent`, {
             method: 'POST',
             headers: headers,
