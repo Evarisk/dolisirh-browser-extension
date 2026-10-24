@@ -20,6 +20,13 @@
 .custom-select-trigger:hover {
     border-color: #94a3b8;
 }
+.custom-select-trigger.disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    border-color: #cbd5e1;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 .custom-select-trigger.open {
     border-color: #3498db;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);

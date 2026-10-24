@@ -776,6 +776,26 @@ a.rt-ref:hover {
 .custom-select-trigger:hover {
     border-color: #94a3b8;
 }
+.custom-select-trigger.disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    border-color: #cbd5e1;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+#btn-save-time-setup:not(:disabled) {
+    background-color: #2ecc71;
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+}
+#btn-save-time-setup:not(:disabled):hover {
+    background-color: #27ae60;
+}
+#btn-save-time-setup:disabled {
+    background-color: #cbd5e1;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+}
 .custom-select-trigger.open {
     border-color: #3498db;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);

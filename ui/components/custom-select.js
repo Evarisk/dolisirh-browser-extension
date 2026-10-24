@@ -41,6 +41,10 @@ export class CustomSelect {
 
         this.trigger = document.createElement('div');
         this.trigger.className = 'custom-select-trigger';
+        if (this.selectElement.disabled) {
+            this.wrapper.classList.add('disabled');
+            this.trigger.classList.add('disabled');
+        }
 
         const selectedOption = this.selectElement.options[this.selectElement.selectedIndex] || this.selectElement.options[0];
         let triggerText = selectedOption ? selectedOption.textContent : '-- Sélectionnez --';
@@ -162,6 +166,7 @@ export class CustomSelect {
 
     bindEvents() {
         this.trigger.addEventListener('click', () => {
+            if (this.selectElement.disabled) return;
             this.wrapper.classList.toggle('open');
             this.trigger.classList.toggle('open');
             if (this.wrapper.classList.contains('open')) {

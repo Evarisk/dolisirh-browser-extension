@@ -60,8 +60,16 @@ const apiCall = async (url, options = {}, retries = 0) => {
         if (contentType && contentType.includes('application/json')) {
             return await response.json();
         }
-        // Pour le téléchargement de documents (blob) ou de text
-        return response;
+        const rawText = await response.text();
+        try {
+            return JSON.parse(rawText);
+        } catch (_) {
+            const cleanText = String(rawText || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            if (/module\s+api\s+must\s+be\s+enabled|module\s+api\s+doit|api\s+is\s+disabled/i.test(cleanText)) {
+                throw new Error(`Erreur HTTP 503: API_DISABLED - ${cleanText}`);
+            }
+            throw new Error(`Erreur HTTP 502: Réponse non-JSON de Dolibarr (${cleanText.slice(0, 120) || 'vide'})`);
+        }
     } catch (err) {
         if (retries < MAX_RETRIES && err.message.includes('fetch')) {
             // Retry on network/DNS errors
@@ -70,8 +78,8 @@ const apiCall = async (url, options = {}, retries = 0) => {
             return await apiCall(url, options, retries + 1);
         }
         const isLoginFallback = url.includes('/login?') && err.message.includes('403');
-        if (!err.message.includes('404') && !isLoginFallback) {
-            console.error(`[API] Echoué après ${retries} tentatives :`, err);
+        if (!err.message.includes('404') && !err.message.includes('API_DISABLED') && !isLoginFallback) {
+            console.warn(`[API] Echoué après ${retries} tentatives :`, err.message || err);
         }
         throw err;
     }

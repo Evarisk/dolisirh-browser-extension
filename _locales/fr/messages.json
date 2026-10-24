@@ -991,5 +991,23 @@
   },
   "std_create_custom_task_btn_title": {
     "message": "Créer la tâche"
+  },
+  "opt_dolisirh_missing_warn": {
+    "message": "⚠️ Le module DoliSIRH n'est pas installé et/ou n'est pas activé sur ce Dolibarr."
+  },
+  "opt_perm_dolisirh_cat": {
+    "message": "Module DoliSIRH"
+  },
+  "opt_perm_dolisirh_title": {
+    "message": "Module DoliSIRH installé et activé"
+  },
+  "dolisirh_missing_msg": {
+    "message": "Le module API est désactivé ou DoliSIRH n'est pas présent et/ou activé. Vous pouvez l'acheter sur :"
+  },
+  "dolisirh_dolistore_link_label": {
+    "message": "Dolistore"
+  },
+  "opt_api_disabled_err": {
+    "message": "✗ Le module API/Web services est désactivé sur ce Dolibarr."
   }
 }

@@ -3143,6 +3143,94 @@ function classifyDefaultHrTask(task) {
     return null;
 }
 
+const DOLISIRH_DOLISTORE_URL = 'https://www.dolistore.com/product.php?id=597&l=fr';
+
+/**
+ * Affiche ou masque un encart d'alerte dans #timesheet-setup-container lorsque DoliSIRH n'est pas installé/activé,
+ * et grise l'ensemble des contrôles de configuration si le module est absent.
+ * @param {boolean} show
+ */
+function renderSetupDoliSirhWarning(show) {
+    const setupContainer = document.getElementById('timesheet-setup-container');
+    const select = document.getElementById('time-setup-project');
+    const presContainer = document.getElementById('time-setup-presence-container');
+    const absContainer = document.getElementById('time-setup-absence-container');
+    const saveBtn = document.getElementById('btn-save-time-setup');
+    const firstFormGroup = setupContainer ? setupContainer.querySelector('.form-group') : null;
+    if (!setupContainer || !firstFormGroup) return;
+
+    let banner = document.getElementById('time-setup-dolisirh-warning');
+    if (!show) {
+        if (banner) banner.remove();
+        if (select) {
+            select.disabled = false;
+            if (window.timeSetupProjectSelect) window.timeSetupProjectSelect.update();
+        }
+        if (presContainer) {
+            presContainer.style.background = '#fff';
+            presContainer.style.borderColor = '#cbd5e1';
+            presContainer.style.pointerEvents = '';
+            presContainer.style.cursor = '';
+        }
+        if (absContainer) {
+            absContainer.style.background = '#fff';
+            absContainer.style.borderColor = '#cbd5e1';
+            absContainer.style.pointerEvents = '';
+            absContainer.style.cursor = '';
+        }
+        setupContainer.querySelectorAll('.form-group label').forEach(lbl => {
+            lbl.style.color = '#334155';
+        });
+        return;
+    }
+
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'time-setup-dolisirh-warning';
+        banner.style.cssText = 'margin-bottom:12px;padding:8px 10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:11.5px;color:#9a3412;line-height:1.4;';
+
+        const msgSpan = document.createElement('span');
+        msgSpan.textContent = (chrome.i18n.getMessage('dolisirh_missing_msg') || "Le module API est d\u00e9sactiv\u00e9 ou DoliSIRH n'est pas pr\u00e9sent et/ou activ\u00e9. Vous pouvez l'acheter sur :") + ' ';
+
+        const link = document.createElement('a');
+        link.href = DOLISIRH_DOLISTORE_URL;
+        link.textContent = chrome.i18n.getMessage('dolisirh_dolistore_link_label') || 'Dolistore';
+        link.style.cssText = 'color:#c2410c;font-weight:700;text-decoration:underline;cursor:pointer;';
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            chrome.tabs.create({ url: DOLISIRH_DOLISTORE_URL });
+        });
+
+        banner.appendChild(msgSpan);
+        banner.appendChild(link);
+    }
+    setupContainer.insertBefore(banner, firstFormGroup);
+
+    if (select) {
+        select.disabled = true;
+        if (window.timeSetupProjectSelect) window.timeSetupProjectSelect.update();
+    }
+    if (presContainer) {
+        presContainer.style.background = '#f1f5f9';
+        presContainer.style.borderColor = '#cbd5e1';
+        presContainer.style.pointerEvents = 'none';
+        presContainer.style.cursor = 'not-allowed';
+    }
+    if (absContainer) {
+        absContainer.style.background = '#f1f5f9';
+        absContainer.style.borderColor = '#cbd5e1';
+        absContainer.style.pointerEvents = 'none';
+        absContainer.style.cursor = 'not-allowed';
+    }
+    if (saveBtn) {
+        saveBtn.disabled = true;
+    }
+    setupContainer.querySelectorAll('.form-group label').forEach(lbl => {
+        lbl.style.color = '#94a3b8';
+    });
+}
+
 async function loadSetupProjects() {
     const select = document.getElementById('time-setup-project');
     if (!select) return;
@@ -3150,15 +3238,43 @@ async function loadSetupProjects() {
     const headers = { 'DOLAPIKEY': apiToken, 'Accept': 'application/json' };
     if (doliEntity) headers['DOLAPIENTITY'] = doliEntity;
 
+    select.innerHTML = '<option value="">S\u00e9lectionnez un projet RH</option>';
+    if (!window.timeSetupProjectSelect) {
+        window.timeSetupProjectSelect = new CustomSelect(select);
+    } else {
+        window.timeSetupProjectSelect.update();
+    }
+
+    let hasDoliSirhModule = null;
     try {
-        const res = await fetchDoli(`${doliUrl}/projects?sqlfilters=(t.fk_statut:=:1)&limit=10000&sortfield=t.rowid&sortorder=DESC`, { headers });
+        const modRes = await fetchDoli(`${doliUrl}/setup/modules`, { headers });
+        if (modRes.ok) {
+            const modList = await modRes.json();
+            if (Array.isArray(modList)) {
+                hasDoliSirhModule = modList.some(m => String(m || '').toLowerCase().includes('dolisirh'));
+            }
+        }
+    } catch (_) {}
+
+    try {
+        let res = await fetchDoli(`${doliUrl}/projects?sqlfilters=(t.fk_statut:=:1)&limit=10000&sortfield=t.rowid&sortorder=DESC`, { headers });
+        if (!res.ok) {
+            res = await fetchDoli(`${doliUrl}/projects?limit=10000&sortfield=t.rowid&sortorder=DESC`, { headers });
+        }
+
+        let defaultHrProj = null;
         if (res.ok) {
             const projects = await res.json();
             select.innerHTML = '<option value="">S\u00e9lectionnez un projet RH</option>';
             if (Array.isArray(projects)) {
                 const activeEnt = String(doliEntity || '1');
-                const filtered = projects.filter(p => String(p.entity || '1') === activeEnt && String(p.statut ?? p.fk_statut ?? p.status ?? '1') === '1');
-                const defaultHrProj = findDefaultHrProject(filtered);
+                const openProjects = projects.filter(p => String(p.statut ?? p.fk_statut ?? p.status ?? '1') === '1');
+                const baseProjects = openProjects.length > 0 ? openProjects : projects;
+                let filtered = baseProjects.filter(p => String(p.entity || '1') === activeEnt);
+                if (filtered.length === 0 && baseProjects.length > 0) {
+                    filtered = baseProjects;
+                }
+                defaultHrProj = findDefaultHrProject(filtered);
 
                 filtered.forEach(p => {
                     const opt = document.createElement('option');
@@ -3185,9 +3301,14 @@ async function loadSetupProjects() {
                 }
             }
         }
+
+        const isDoliSirhPresent = hasDoliSirhModule !== null ? hasDoliSirhModule : Boolean(defaultHrProj);
+        renderSetupDoliSirhWarning(!isDoliSirhPresent);
     } catch(e) {
         select.innerHTML = '<option value="">Erreur de chargement</option>';
-        console.error('Error fetching setup projects', e);
+        if (window.timeSetupProjectSelect) window.timeSetupProjectSelect.update();
+        renderSetupDoliSirhWarning(true);
+        console.warn('Error fetching setup projects', e);
     }
 }
 

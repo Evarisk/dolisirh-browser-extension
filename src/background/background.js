@@ -54,10 +54,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 sendResponse({ success: true, data });
             } catch (error) {
-                // Ignore silencieusement l'erreur 404 (comportement de fallback normal pour champs manquants)
+                // Ignore silencieusement l'erreur 404 ou API désactivée (évite d'alerter chrome://extensions)
                 const isLoginFallback = endpoint.startsWith('/login') && error.message.includes('403');
-                if (!error.message.includes('404') && !isLoginFallback) {
-                    console.error(`[Background API Error] ${method} ${endpoint}:`, error);
+                const isExpectedStatus = error.message.includes('404') || error.message.includes('API_DISABLED') || error.message.includes('502');
+                if (!isExpectedStatus && !isLoginFallback) {
+                    console.warn(`[Background API Error] ${method} ${endpoint}:`, error.message || error);
                 }
                 sendResponse({ success: false, error: error.message });
             }

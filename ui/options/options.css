@@ -1,4 +1,4 @@
-﻿body {
+body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f4f7f6;
     margin: 0;
@@ -496,4 +496,36 @@ button:hover {
     white-space: nowrap;
     vertical-align: middle;
     width: 48px;
+}
+
+@keyframes optionsSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#btn-fetch-hr-projects.is-loading {
+    opacity: 0.8;
+    cursor: wait !important;
+}
+
+#btn-fetch-hr-projects.is-loading svg {
+    animation: optionsSpin 0.9s linear infinite;
+}
+
+#btn-fetch-hr-projects.is-disabled-dolisirh {
+    background-color: #cbd5e1 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+}
+
+#hr-schedule-table.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.hr-schedule-input:disabled {
+    background: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    border-color: #cbd5e1 !important;
+    cursor: not-allowed !important;
 }
