@@ -69,6 +69,17 @@ function formatSecToHHMM(sec) {
 }
 
 /**
+ * Convertit une durée au format "HH:MM" en secondes (0 si vide ou invalide).
+ * @param {string} durationStr
+ * @returns {number}
+ */
+function parseDurationToSeconds(durationStr) {
+    if (!durationStr || typeof durationStr !== 'string' || !durationStr.includes(':')) return 0;
+    const [h, m] = durationStr.split(':').map(v => parseInt(v, 10) || 0);
+    return Math.max(0, (h * 3600) + (m * 60));
+}
+
+/**
  * Crée une icône SVG (hourglass pour prévu, clock pour passé).
  * @param {'planned'|'spent'} type
  * @returns {SVGElement}
@@ -119,7 +130,8 @@ function extractLastTimespentEntries(tasksList) {
         t.lines.forEach(line => {
             const ts = parseInt(line.timespent_line_datehour || line.timespent_line_date || 0, 10);
             const dur = parseInt(line.timespent_line_duration || 0, 10);
-            if (ts > 0 && dur > 0) {
+            const hasNote = Boolean((line.timespent_line_note || '').trim());
+            if (ts > 0 && (dur > 0 || hasNote)) {
                 allLines.push({
                     ...line,
                     _ts: ts,
@@ -718,10 +730,14 @@ function buildWeekPicker() {
 function updateCardsDefaultTime(dayKey) {
     const schedule = profileConfig?.doliHrSchedule || {};
     const defaultTime = schedule[dayKey] || '00:00';
+    const isNonZero = parseDurationToSeconds(defaultTime) > 0;
     // Met à jour uniquement les cartes qui n'ont pas encore été enregistrées
     document.querySelectorAll('.ts-hr-card:not(.ts-hr-card-done)').forEach(card => {
         const inp = card.querySelector('.ts-hr-time-input');
+        const starBtn = card.querySelector('.ts-hr-star-btn');
         if (inp) inp.value = defaultTime;
+        if (starBtn) starBtn.disabled = !isNonZero;
+        card.classList.toggle('ts-hr-card-active', isNonZero);
     });
 }
 
@@ -863,15 +879,19 @@ async function updateDailyTimespentStats() {
                         const noteInput = card.querySelector('.ts-hr-note-input');
                         if (noteInput && !noteInput.value && lastNote) noteInput.value = lastNote;
                         
+                        const timeInp = card.querySelector('.ts-hr-time-input');
+                        const starBtn = card.querySelector('.ts-hr-star-btn');
+                        const currentInputSec = parseDurationToSeconds(timeInp ? timeInp.value : '');
+                        if (starBtn && !starBtn.classList.contains('ts-star-loading')) {
+                            starBtn.disabled = currentInputSec <= 0;
+                        }
                         if (taskTodaySec > 0) {
                             card.classList.add('ts-hr-card-active', 'ts-hr-card-done');
-                            const starBtn = card.querySelector('.ts-hr-star-btn');
                             if (starBtn) starBtn.classList.add('ts-star-active');
                         } else {
                             card.classList.remove('ts-hr-card-done');
-                            const starBtn = card.querySelector('.ts-hr-star-btn');
                             if (starBtn) starBtn.classList.remove('ts-star-active');
-                            if (!defaultTimeStr) card.classList.remove('ts-hr-card-active');
+                            card.classList.toggle('ts-hr-card-active', currentInputSec > 0);
                         }
 
                         // Champ Total supprimé à la demande de l'utilisateur
@@ -1537,23 +1557,27 @@ function checkSubmitStatus() {
     if (!btnSubmit) return;
 
     const requireNote = profileConfig?.doliRequireNote !== undefined ? Boolean(profileConfig.doliRequireNote) : true;
+    const duration = (document.getElementById('time-duration-std') || document.getElementById('time-duration'))?.value || '00:00';
+    const durationSec = parseDurationToSeconds(duration);
+    const date = (document.getElementById('time-date-std') || document.getElementById('time-date'))?.value;
+    const noteVal = (document.getElementById('time-note-std') || document.getElementById('time-note'))?.value?.trim() || '';
+
+    // Sur un projet standard, si la durée est nulle (00:00), la note est obligatoire afin de permettre d'enregistrer une note seule
+    const mustHaveNote = requireNote || durationSec === 0;
     const reqStar = document.getElementById('std-note-req-star');
     if (reqStar) {
-        reqStar.style.display = requireNote ? 'inline' : 'none';
+        reqStar.style.display = mustHaveNote ? 'inline' : 'none';
     }
 
     let isValid = false;
-    const duration = (document.getElementById('time-duration-std') || document.getElementById('time-duration'))?.value;
-    const date = (document.getElementById('time-date-std') || document.getElementById('time-date'))?.value;
-    const noteVal = (document.getElementById('time-note-std') || document.getElementById('time-note'))?.value?.trim() || '';
-    
-    if (duration && date) {
+    if (date) {
         if (currentMode === 'standard') {
             const task = document.getElementById('time-task')?.value;
-            const noteOk = !requireNote || noteVal.length > 0;
-            if (task && task !== '' && noteOk) isValid = true;
+            const noteOk = !mustHaveNote || noteVal.length > 0;
+            const hasDurationOrNote = durationSec > 0 || noteVal.length > 0;
+            if (task && task !== '' && noteOk && hasDurationOrNote) isValid = true;
         } else {
-            if (selectedHrTask) isValid = true;
+            if (selectedHrTask && durationSec > 0) isValid = true;
         }
     }
 
@@ -2380,7 +2404,8 @@ function renderStandardProjectHistory() {
         lines.forEach(line => {
             const ts = parseInt(line.timespent_line_datehour || line.timespent_line_date || 0, 10);
             const dur = parseInt(line.timespent_line_duration || 0, 10);
-            if (ts <= 0 || dur <= 0) return;
+            const hasNote = Boolean((line.timespent_line_note || '').trim());
+            if (ts <= 0 || (dur <= 0 && !hasNote)) return;
             const dStr = toLocalDateStr(new Date(ts * 1000));
             if (dStr !== targetDateStr) return;
             allEntries.push({
@@ -2717,34 +2742,39 @@ function createHrCard(taskId, ref, label, type) {
     card.appendChild(historyDiv);
 
     // -- Interactions ---------------------------------------------------------
-    timeInput.addEventListener('change', () => {
-        if (timeInput.value) {
+    const syncCardSaveState = () => {
+        const sec = parseDurationToSeconds(timeInput.value);
+        if (sec > 0) {
             card.classList.add('ts-hr-card-active');
+            starBtn.disabled = false;
         } else {
-            card.classList.remove('ts-hr-card-active', 'ts-hr-card-done');
-            starBtn.classList.remove('ts-star-active');
+            card.classList.remove('ts-hr-card-active');
+            starBtn.disabled = true;
         }
-    });
-
-    if (defaultTime) {
-        card.classList.add('ts-hr-card-active');
-    }
+    };
+    timeInput.addEventListener('input', syncCardSaveState);
+    timeInput.addEventListener('change', syncCardSaveState);
+    syncCardSaveState();
 
     starBtn.addEventListener('click', async () => {
         const duration = timeInput.value;
-        if (!duration) {
+        const durationInSeconds = parseDurationToSeconds(duration);
+        if (!duration || durationInSeconds <= 0) {
             timeInput.focus();
             timeInput.style.borderColor = '#e74c3c';
             setTimeout(() => { timeInput.style.borderColor = ''; }, 1500);
+            statusDiv.classList.remove('hidden');
+            statusDiv.style.color = '#e74c3c';
+            statusDiv.textContent = chrome.i18n.getMessage('error_5001') || "Dur\u00e9e invalide. Veuillez renseigner une dur\u00e9e avant d'enregistrer.";
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+                statusDiv.textContent = '';
+            }, 3000);
             return;
         }
 
         const dateVal = document.getElementById('time-date')?.value || toLocalDateStr(selectedDate);
         const note    = noteInput.value || '';
-
-        // Parse HH:MM → secondes
-        const [h, m] = duration.split(':').map(Number);
-        const durationInSeconds = (h * 3600) + (m * 60);
 
         // Format date Dolibarr "YYYY-MM-DD HH:MM:SS"
         const d = new Date(dateVal + 'T00:00:00');
@@ -2798,7 +2828,7 @@ function createHrCard(taskId, ref, label, type) {
                     starBtn.classList.remove('ts-star-success');
                 }, 2000);
 
-                starBtn.disabled = false;
+                starBtn.disabled = parseDurationToSeconds(timeInput.value) <= 0;
                 statusDiv.classList.remove('hidden');
                 statusDiv.style.color = '#22c55e';
                 statusDiv.textContent = chrome.i18n.getMessage('time_card_saved');
@@ -2815,7 +2845,7 @@ function createHrCard(taskId, ref, label, type) {
             } else {
                 let errTxt = res.statusText;
                 try { const body = await res.json(); errTxt = body.error || body.message || errTxt; } catch(_) {}
-                starBtn.disabled = false;
+                starBtn.disabled = parseDurationToSeconds(timeInput.value) <= 0;
                 statusDiv.classList.remove('hidden');
                 // Affichage standardisé ReedCRM-5002
                 showDoliError(
@@ -2824,7 +2854,7 @@ function createHrCard(taskId, ref, label, type) {
                 );
             }
         } catch(e) {
-            starBtn.disabled = false;
+            starBtn.disabled = parseDurationToSeconds(timeInput.value) <= 0;
             starBtn.classList.remove('ts-star-loading');
             statusDiv.classList.remove('hidden');
             // Affichage standardisé ReedCRM-5003
@@ -2972,7 +3002,7 @@ async function submitTime() {
     const btn = document.getElementById('btn-submit-time-std') || document.getElementById('btn-submit-time');
     const statusDiv = document.getElementById('time-status-std') || document.getElementById('time-status');
     const date = (document.getElementById('time-date-std') || document.getElementById('time-date'))?.value;
-    const duration = (document.getElementById('time-duration-std') || document.getElementById('time-duration'))?.value;
+    const duration = (document.getElementById('time-duration-std') || document.getElementById('time-duration'))?.value || '00:00';
     const noteEl = document.getElementById('time-note-std') || document.getElementById('time-note');
     const note = noteEl ? noteEl.value : '';
     
@@ -2985,15 +3015,13 @@ async function submitTime() {
 
     if (!taskId) return;
 
+    const durationInSeconds = parseDurationToSeconds(duration);
+    if (currentMode !== 'standard' && durationInSeconds <= 0) return;
+    if (currentMode === 'standard' && durationInSeconds <= 0 && !note.trim()) return;
+
     btn.disabled = true;
     btn.classList.add('loading');
     statusDiv.textContent = '';
-    
-    // Parse duration HH:MM
-    const parts = duration.split(':');
-    let h = parseInt(parts[0], 10) || 0;
-    let m = parseInt(parts[1], 10) || 0;
-    const durationInSeconds = (h * 3600) + (m * 60);
 
     // Date au format attendu par l'API Dolibarr : "YYYY-MM-DD HH:MM:SS"
     const dObj = new Date(date + 'T00:00:00');
