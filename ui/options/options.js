@@ -28,9 +28,11 @@ async function fetchDoli(url, options = {}) {
                 return reject(new Error(chrome.runtime.lastError.message));
             }
             if (response && response.error) {
+                const statusMatch = String(response.error).match(/Erreur HTTP (\d+)/i);
+                const parsedStatus = statusMatch ? parseInt(statusMatch[1], 10) : 500;
                 return resolve({
                     ok: false,
-                    status: 500,
+                    status: parsedStatus,
                     statusText: response.error,
                     json: async () => { throw new Error(response.error); }
                 });
@@ -58,16 +60,27 @@ async function testDolibarrConnection(apiUrl, login, passwordOrToken, entity) {
             headers: { ...baseHeaders, 'DOLAPIKEY': passwordOrToken }
         });
         if (testKeyResponse.ok) {
-            authSuccess = true;
-        } else {
+            try {
+                const statusData = await testKeyResponse.json();
+                if (statusData && statusData.success && (statusData.success.code === 200 || statusData.success.dolibarr_version)) {
+                    authSuccess = true;
+                }
+            } catch (_) {}
+        } else if (String(testKeyResponse.statusText || '').includes('API_DISABLED')) {
+            return { success: false, apiDisabled: true, error: new DoliError('ReedCRM-1002') };
+        }
+
+        if (!authSuccess) {
             const loginResponse = await fetchDoli(`${apiUrl}/login?login=${encodeURIComponent(login)}&password=${encodeURIComponent(passwordOrToken)}`, {
                 method: 'POST',
                 headers: baseHeaders
             });
             if (loginResponse.ok) {
                 const data = await loginResponse.json();
-                apiTokenFinal = data.success ? data.success.token : null;
+                apiTokenFinal = data && data.success ? data.success.token : null;
                 authSuccess = Boolean(apiTokenFinal);
+            } else if (String(loginResponse.statusText || '').includes('API_DISABLED')) {
+                return { success: false, apiDisabled: true, error: new DoliError('ReedCRM-1002') };
             }
         }
 
@@ -77,21 +90,46 @@ async function testDolibarrConnection(apiUrl, login, passwordOrToken, entity) {
 
         let canReadUsers = false;
         let canReadProjects = false;
+        let hasDoliSirh = false;
+        let doliSirhChecked = false;
         try {
             const usersResponse = await fetchDoli(`${apiUrl}/users?limit=1`, {
                 method: 'GET',
                 headers: { ...baseHeaders, 'DOLAPIKEY': apiTokenFinal }
             });
-            if (usersResponse.status !== 403 && usersResponse.status !== 401) {
+            if (usersResponse.ok || usersResponse.status === 404) {
                 canReadUsers = true;
             }
 
-            const projectsResponse = await fetchDoli(`${apiUrl}/projects?limit=1`, {
+            const projectsResponse = await fetchDoli(`${apiUrl}/projects?limit=100`, {
                 method: 'GET',
                 headers: { ...baseHeaders, 'DOLAPIKEY': apiTokenFinal }
             });
-            if (projectsResponse.status !== 403 && projectsResponse.status !== 401) {
+            if (projectsResponse.ok || projectsResponse.status === 404) {
                 canReadProjects = true;
+            }
+
+            try {
+                const modulesResponse = await fetchDoli(`${apiUrl}/setup/modules`, {
+                    method: 'GET',
+                    headers: { ...baseHeaders, 'DOLAPIKEY': apiTokenFinal }
+                });
+                if (modulesResponse.ok) {
+                    const modulesList = await modulesResponse.json();
+                    if (Array.isArray(modulesList)) {
+                        doliSirhChecked = true;
+                        hasDoliSirh = modulesList.some(m => String(m || '').toLowerCase().includes('dolisirh'));
+                    }
+                }
+            } catch (_) {}
+
+            if (!doliSirhChecked && projectsResponse.ok) {
+                try {
+                    const projList = await projectsResponse.json();
+                    if (Array.isArray(projList)) {
+                        hasDoliSirh = Boolean(findDefaultHrProject(projList));
+                    }
+                } catch (_) {}
             }
         } catch (err) {
             console.warn("Erreur lors de la vérification des droits API:", err);
@@ -118,7 +156,8 @@ async function testDolibarrConnection(apiUrl, login, passwordOrToken, entity) {
             apiToken: apiTokenFinal,
             permissions: {
                 users: canReadUsers,
-                projects: canReadProjects
+                projects: canReadProjects,
+                dolisirh: hasDoliSirh
             },
             entityName: entityName
         };
@@ -127,7 +166,101 @@ async function testDolibarrConnection(apiUrl, login, passwordOrToken, entity) {
     }
 }
 
+const DOLISIRH_DOLISTORE_URL = 'https://www.dolistore.com/product.php?id=597&l=fr';
 let profiles = [];
+
+/**
+ * Construit un élément d'avertissement DoliSIRH manquant avec lien vers le DoliStore.
+ * @returns {HTMLDivElement}
+ */
+function createDoliSirhMissingBanner() {
+    const warnLine = document.createElement('div');
+    warnLine.className = 'dolisirh-missing-warn';
+    warnLine.style.color = '#e67e22';
+    warnLine.style.marginTop = '6px';
+    warnLine.style.fontSize = '12px';
+
+    const txt = document.createElement('span');
+    txt.textContent = (chrome.i18n.getMessage('dolisirh_missing_msg') || "Le module API est d\u00e9sactiv\u00e9 ou DoliSIRH n'est pas pr\u00e9sent et/ou activ\u00e9. Vous pouvez l'acheter sur :") + ' ';
+
+    const link = document.createElement('a');
+    link.href = DOLISIRH_DOLISTORE_URL;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = chrome.i18n.getMessage('dolisirh_dolistore_link_label') || 'Dolistore';
+    link.style.color = '#d35400';
+    link.style.fontWeight = '700';
+    link.style.textDecoration = 'underline';
+
+    warnLine.appendChild(txt);
+    warnLine.appendChild(link);
+    return warnLine;
+}
+
+/**
+ * Met à jour la section "Pointage & Ressources Humaines" selon la présence/activation du module DoliSIRH :
+ * - Affiche ou retire le rappel sous la description de la section (5)
+ * - Grise et désactive les champs spécifiques à DoliSIRH (Projet RH, bouton API (4), Présences (3), Absences (2), Planning (1))
+ * @param {boolean} isMissing
+ */
+function updateOptionsDoliSirhSectionState(isMissing) {
+    const descSpan = document.querySelector('[data-i18n="opt_pointage_desc"]');
+    const descP = descSpan ? descSpan.closest('p') : null;
+    let banner = document.getElementById('opt-hr-dolisirh-warning');
+
+    if (isMissing && descP && descP.parentElement) {
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'opt-hr-dolisirh-warning';
+            banner.style.cssText = 'margin-bottom:14px;padding:8px 10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:12px;color:#9a3412;line-height:1.4;';
+            const warnContent = createDoliSirhMissingBanner();
+            warnContent.style.marginTop = '0';
+            warnContent.style.color = '#9a3412';
+            banner.appendChild(warnContent);
+        }
+        descP.insertAdjacentElement('afterend', banner);
+    } else if (!isMissing && banner) {
+        banner.remove();
+    }
+
+    const pSel = document.getElementById('doli-hr-project');
+    const prSel = document.getElementById('doli-hr-presence-tasks');
+    const abSel = document.getElementById('doli-hr-absence-tasks');
+    const fetchBtn = document.getElementById('btn-fetch-hr-projects');
+    const scheduleTable = document.getElementById('hr-schedule-table');
+
+    if (pSel) {
+        pSel.disabled = Boolean(isMissing);
+        if (window.optionsHrProjectSelect) window.optionsHrProjectSelect.update();
+        const lbl = document.querySelector('label[for="doli-hr-project"]');
+        if (lbl) lbl.style.color = isMissing ? '#94a3b8' : '';
+    }
+    if (fetchBtn) {
+        fetchBtn.classList.toggle('is-disabled-dolisirh', Boolean(isMissing));
+        fetchBtn.disabled = Boolean(isMissing);
+    }
+    if (prSel) {
+        prSel.disabled = Boolean(isMissing);
+        if (window.optionsHrPresenceSelect) window.optionsHrPresenceSelect.update();
+        const lbl = document.querySelector('label[for="doli-hr-presence-tasks"]');
+        if (lbl) lbl.style.color = isMissing ? '#94a3b8' : '';
+    }
+    if (abSel) {
+        abSel.disabled = Boolean(isMissing);
+        if (window.optionsHrAbsenceSelect) window.optionsHrAbsenceSelect.update();
+        const lbl = document.querySelector('label[for="doli-hr-absence-tasks"]');
+        if (lbl) lbl.style.color = isMissing ? '#94a3b8' : '';
+    }
+    if (scheduleTable) {
+        scheduleTable.classList.toggle('is-disabled', Boolean(isMissing));
+        scheduleTable.querySelectorAll('.hr-schedule-input').forEach(inp => {
+            inp.disabled = Boolean(isMissing);
+        });
+        const schedGroup = scheduleTable.closest('.form-group');
+        const schedLbl = schedGroup ? schedGroup.querySelector('label') : null;
+        if (schedLbl) schedLbl.style.color = isMissing ? '#94a3b8' : '';
+    }
+}
 let activeProfileId = null;
 
 function getActiveProfile() {
@@ -149,7 +282,7 @@ function loadProfileIntoForm(p) {
     if (p.doliStatus) {
         renderPermissions(p.doliStatus, p.doliUrl);
     } else {
-        renderPermissions({ connection: 'pending', users: 'pending', projects: 'pending' }, p.doliUrl);
+        renderPermissions({ connection: 'pending', dolisirh: 'pending', users: 'pending', projects: 'pending' }, p.doliUrl);
     }
 
     const _pSel = document.getElementById('doli-hr-project');
@@ -177,6 +310,16 @@ function loadProfileIntoForm(p) {
     }
     if (_abSel) {
         _abSel.dataset.selectedValues = JSON.stringify(p.doliHrAbsenceTasks || []);
+    }
+
+    if (_pSel) {
+        window.optionsHrProjectSelect = new CustomSelect(_pSel);
+    }
+    if (_prSel) {
+        window.optionsHrPresenceSelect = new CustomMultiSelect(_prSel);
+    }
+    if (_abSel) {
+        window.optionsHrAbsenceSelect = new CustomMultiSelect(_abSel);
     }
 
     const defaultMode = p.doliDefaultMode || 'rh';
@@ -219,6 +362,10 @@ function loadProfileIntoForm(p) {
             startInp.value = rawStart !== undefined ? toHHMM(rawStart) : (isWeekend ? weekendDefault : startDefault);
         }
     });
+
+    const isDoliSirhMissing = (p.doliStatus && p.doliStatus.dolisirh === 'ko')
+        || (p.permissions && p.permissions.dolisirh === false);
+    updateOptionsDoliSirhSectionState(Boolean(isDoliSirhMissing));
 }
 
 function renderProfileSelect() {
@@ -241,6 +388,12 @@ function renderPermissions(statusObj, baseUrl) {
     const baseDoli = baseUrl ? baseUrl.replace(/\/api\/index\.php$/, '') : '';
 
     const categories = [
+        {
+            name: chrome.i18n.getMessage('opt_perm_dolisirh_cat') || "Module DoliSIRH",
+            rights: [
+                { id: 'SIRH', title: chrome.i18n.getMessage('opt_perm_dolisirh_title') || "Module DoliSIRH installé et activé", key: "dolisirh" }
+            ]
+        },
         {
             name: "Utilisateurs & Groupes",
             rights: [
@@ -275,7 +428,9 @@ function renderPermissions(statusObj, baseUrl) {
             else if (status === 'warning') { statusText = 'Test...'; statusClass = 'warning'; }
 
             let rightLink = "#";
-            if (baseDoli && right.id !== 'API') {
+            if (baseDoli && right.id === 'SIRH') {
+                rightLink = `${baseDoli}/admin/modules.php?search_keyword=dolisirh`;
+            } else if (baseDoli && right.id !== 'API') {
                 rightLink = `${baseDoli}/user/group/perms.php?id=58&rights=${right.id}`;
             } else if (baseDoli && right.id === 'API') {
                 rightLink = `${baseDoli}/admin/modules.php?search_keyword=api`;
@@ -382,84 +537,246 @@ function classifyDefaultHrTask(task) {
     return null;
 }
 
-async function loadHrData(profile) {
+/**
+ * Normalise une URL Dolibarr saisie dans le formulaire vers son endpoint /api/index.php.
+ * @param {string} rawUrl
+ * @returns {string}
+ */
+function normalizeDoliApiUrl(rawUrl) {
+    let normalizedUrl = (rawUrl || '').trim().replace(/\/+$/, '');
+    if (!normalizedUrl) return '';
+    if (!normalizedUrl.endsWith('/api/index.php')) {
+        if (normalizedUrl.endsWith('/htdocs')) normalizedUrl += '/api/index.php';
+        else if (!normalizedUrl.includes('/api/index.php')) normalizedUrl += '/htdocs/api/index.php';
+    }
+    return normalizedUrl;
+}
+
+async function loadHrData(profile, isManualClick = false) {
     const projectSelect = document.getElementById('doli-hr-project');
     const presenceSelect = document.getElementById('doli-hr-presence-tasks');
     const absenceSelect = document.getElementById('doli-hr-absence-tasks');
-
-    if (!profile || !profile.doliUrl || !profile.doliApiToken) return;
-
-    const headers = { 'DOLAPIKEY': profile.doliApiToken, 'Accept': 'application/json' };
-    if (profile.doliEntity) headers['DOLAPIENTITY'] = profile.doliEntity;
-
+    const statusDiv = document.getElementById('hr-save-status');
     const btn = document.getElementById('btn-fetch-hr-projects');
-    if (btn) btn.disabled = true;
+
+    if (!profile) return;
+
+    // Synchroniser avec les champs du formulaire si le profil n'a pas encore ete sauvegarde
+    const formUrlRaw = document.getElementById('doli-url')?.value?.trim() || '';
+    const formLogin = document.getElementById('doli-login')?.value?.trim() || '';
+    const formPass = document.getElementById('doli-password')?.value?.trim() || '';
+    const formEntity = document.getElementById('doli-entity')?.value?.trim() || '';
+
+    if (formUrlRaw) {
+        profile.doliUrl = normalizeDoliApiUrl(formUrlRaw);
+    }
+    if (formLogin) {
+        profile.doliLogin = formLogin;
+    }
+    if (formPass && !profile.doliApiToken) {
+        profile.doliApiToken = formPass;
+    }
+    if (formEntity !== undefined) {
+        profile.doliEntity = formEntity;
+    }
+
+    if (!profile.doliUrl || !profile.doliApiToken) {
+        if (isManualClick && statusDiv) {
+            statusDiv.style.color = '#e74c3c';
+            statusDiv.textContent = chrome.i18n.getMessage('opt_js_135') || 'Veuillez renseigner l\'URL et les identifiants Dolibarr ci-dessus.';
+        }
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+    }
+    if (isManualClick && statusDiv) {
+        statusDiv.style.color = '#3498db';
+        statusDiv.textContent = chrome.i18n.getMessage('popup_20') || 'Chargement...';
+    }
 
     try {
-        const pRes = await fetchDoli(`${profile.doliUrl}/projects?sqlfilters=(t.fk_statut:=:1)&sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
+        // Si le champ mot de passe contient un mot de passe (et non un token API valide), tenter une connexion pour obtenir le token
+        let headers = { 'DOLAPIKEY': profile.doliApiToken, 'Accept': 'application/json' };
+        if (profile.doliEntity) headers['DOLAPIENTITY'] = profile.doliEntity;
+
+        let pRes = await fetchDoli(`${profile.doliUrl}/projects?sqlfilters=(t.fk_statut:=:1)&sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
+
+        if (!pRes.ok && profile.doliLogin && (formPass || profile.doliApiToken)) {
+            const connRes = await testDolibarrConnection(profile.doliUrl, profile.doliLogin, formPass || profile.doliApiToken, profile.doliEntity || '');
+            if (connRes.success && connRes.apiToken) {
+                profile.doliApiToken = connRes.apiToken;
+                const passInput = document.getElementById('doli-password');
+                if (passInput) passInput.value = connRes.apiToken;
+                chrome.storage.sync.set({ doliProfiles: profiles });
+                headers = { 'DOLAPIKEY': profile.doliApiToken, 'Accept': 'application/json' };
+                if (profile.doliEntity) headers['DOLAPIENTITY'] = profile.doliEntity;
+                pRes = await fetchDoli(`${profile.doliUrl}/projects?sqlfilters=(t.fk_statut:=:1)&sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
+            }
+        }
+
+        // Fallback sans sqlfilters (ex: 404 si aucun projet au statut 1 ou filtre non supporte)
+        if (!pRes.ok) {
+            pRes = await fetchDoli(`${profile.doliUrl}/projects?sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
+        }
+
+        let hasDoliSirh = false;
+        let modChecked = false;
+        try {
+            const modRes = await fetchDoli(`${profile.doliUrl}/setup/modules`, { headers });
+            if (modRes.ok) {
+                const modList = await modRes.json();
+                if (Array.isArray(modList)) {
+                    modChecked = true;
+                    hasDoliSirh = modList.some(m => String(m || '').toLowerCase().includes('dolisirh'));
+                }
+            }
+        } catch (_) {}
+
+        let defaultHrProj = null;
+        let filteredProjectsCount = 0;
+
         if (pRes.ok) {
-            const projects = await pRes.json();
+            let projects = [];
+            try {
+                const rawProjects = await pRes.json();
+                if (Array.isArray(rawProjects)) projects = rawProjects;
+            } catch (_) {}
+
             projectSelect.innerHTML = '<option value="">-- S\u00e9lectionner un projet --</option>';
-            if (Array.isArray(projects)) {
-                const targetEnt = profile.doliEntity ? String(profile.doliEntity).trim() : '';
-                const openProjects = projects.filter(proj => String(proj.statut ?? proj.fk_statut ?? proj.status ?? '1') === '1');
-                const filteredProjects = targetEnt
-                    ? openProjects.filter(proj => String(proj.entity || '1') === targetEnt)
-                    : openProjects;
 
-                const defaultHrProj = findDefaultHrProject(filteredProjects);
-                const savedProjId = String(profile.doliHrProject || projectSelect.dataset.selectedValue || '');
-                const savedProj = filteredProjects.find(pr => String(pr.id) === savedProjId);
-                const hasConfiguredTasks = (Array.isArray(profile.doliHrPresenceTasks) && profile.doliHrPresenceTasks.length > 0)
-                    || (Array.isArray(profile.doliHrAbsenceTasks) && profile.doliHrAbsenceTasks.length > 0);
+            const targetEnt = profile.doliEntity ? String(profile.doliEntity).trim() : '';
+            const openProjects = projects.filter(proj => String(proj.statut ?? proj.fk_statut ?? proj.status ?? '1') === '1');
+            const baseList = openProjects.length > 0 ? openProjects : projects;
+            let filteredProjects = targetEnt
+                ? baseList.filter(proj => String(proj.entity || '1') === targetEnt)
+                : baseList;
+            if (filteredProjects.length === 0 && baseList.length > 0) {
+                filteredProjects = baseList;
+            }
+            filteredProjectsCount = filteredProjects.length;
 
-                const defaultIs200 = defaultHrProj && normalizeHrText(defaultHrProj.title || '').includes('2.0.0');
-                const savedIsOldHr = savedProj && isDefaultHrProject(savedProj) && !normalizeHrText(savedProj.title || '').includes('2.0.0');
-                let targetProjectId = savedProj ? String(savedProj.id) : '';
-                if (defaultHrProj && (!savedProj || (defaultIs200 && savedIsOldHr) || (!hasConfiguredTasks && !isDefaultHrProject(savedProj)))) {
-                    targetProjectId = String(defaultHrProj.id);
-                    projectSelect.dataset.selectedValue = targetProjectId;
-                    presenceSelect.dataset.selectedValues = '[]';
-                    absenceSelect.dataset.selectedValues = '[]';
+            defaultHrProj = findDefaultHrProject(filteredProjects);
+            if (!modChecked) {
+                hasDoliSirh = Boolean(defaultHrProj);
+            }
+            const savedProjId = String(profile.doliHrProject || projectSelect.dataset.selectedValue || '');
+            const savedProj = filteredProjects.find(pr => String(pr.id) === savedProjId);
+            const hasConfiguredTasks = (Array.isArray(profile.doliHrPresenceTasks) && profile.doliHrPresenceTasks.length > 0)
+                || (Array.isArray(profile.doliHrAbsenceTasks) && profile.doliHrAbsenceTasks.length > 0);
+
+            const defaultIs200 = defaultHrProj && normalizeHrText(defaultHrProj.title || '').includes('2.0.0');
+            const savedIsOldHr = savedProj && isDefaultHrProject(savedProj) && !normalizeHrText(savedProj.title || '').includes('2.0.0');
+            let targetProjectId = savedProj ? String(savedProj.id) : '';
+            if (defaultHrProj && (!savedProj || (defaultIs200 && savedIsOldHr) || (!hasConfiguredTasks && !isDefaultHrProject(savedProj)))) {
+                targetProjectId = String(defaultHrProj.id);
+                projectSelect.dataset.selectedValue = targetProjectId;
+                presenceSelect.dataset.selectedValues = '[]';
+                absenceSelect.dataset.selectedValues = '[]';
+            }
+
+            filteredProjects.forEach(proj => {
+                const opt = document.createElement('option');
+                opt.value = proj.id;
+                const doc = new DOMParser().parseFromString(`${proj.ref || ''} - ${proj.title || ''}`, 'text/html');
+                opt.textContent = doc.documentElement.textContent || `${proj.ref} - ${proj.title}`;
+                if (String(proj.id) === targetProjectId) {
+                    opt.selected = true;
                 }
+                projectSelect.appendChild(opt);
+            });
 
-                filteredProjects.forEach(proj => {
-                    const opt = document.createElement('option');
-                    opt.value = proj.id;
-                    const doc = new DOMParser().parseFromString(`${proj.ref || ''} - ${proj.title || ''}`, 'text/html');
-                    opt.textContent = doc.documentElement.textContent || `${proj.ref} - ${proj.title}`;
-                    if (String(proj.id) === targetProjectId) {
-                        opt.selected = true;
-                    }
-                    projectSelect.appendChild(opt);
-                });
+            if (targetProjectId) {
+                projectSelect.value = targetProjectId;
+            }
 
-                if (targetProjectId) {
-                    projectSelect.value = targetProjectId;
-                }
-
-                if (!window.optionsHrProjectSelect) {
-                    window.optionsHrProjectSelect = new CustomSelect(projectSelect);
-                } else {
-                    window.optionsHrProjectSelect.update();
-                }
+            if (!window.optionsHrProjectSelect) {
+                window.optionsHrProjectSelect = new CustomSelect(projectSelect);
+            } else {
+                window.optionsHrProjectSelect.update();
             }
 
             if (projectSelect.value) {
                 await loadHrTasks(profile, projectSelect.value, presenceSelect, absenceSelect);
+            } else {
+                if (!window.optionsHrPresenceSelect && presenceSelect) {
+                    window.optionsHrPresenceSelect = new CustomMultiSelect(presenceSelect);
+                } else if (window.optionsHrPresenceSelect) {
+                    window.optionsHrPresenceSelect.update();
+                }
+                if (!window.optionsHrAbsenceSelect && absenceSelect) {
+                    window.optionsHrAbsenceSelect = new CustomMultiSelect(absenceSelect);
+                } else if (window.optionsHrAbsenceSelect) {
+                    window.optionsHrAbsenceSelect.update();
+                }
+            }
+        }
+
+        const isApiDisabled = String(pRes.statusText || '').includes('API_DISABLED');
+        if (isApiDisabled) {
+            profile.permissions = { users: false, projects: false, dolisirh: false };
+            profile.doliStatus = { connection: 'ko', dolisirh: 'ko', users: 'ko', projects: 'ko' };
+            renderPermissions(profile.doliStatus, profile.doliUrl);
+            updateOptionsDoliSirhSectionState(true);
+            const testStatusDiv = document.getElementById('test-status-container');
+            if (testStatusDiv && !testStatusDiv.querySelector('.dolisirh-missing-warn')) {
+                testStatusDiv.appendChild(createDoliSirhMissingBanner());
+            }
+        } else if (modChecked || pRes.ok) {
+            if (!profile.permissions) profile.permissions = {};
+            profile.permissions.dolisirh = hasDoliSirh;
+            if (!profile.doliStatus) {
+                profile.doliStatus = { connection: 'ok', users: 'ok', projects: 'ok' };
+            }
+            profile.doliStatus.dolisirh = hasDoliSirh ? 'ok' : 'ko';
+            renderPermissions(profile.doliStatus, profile.doliUrl);
+            updateOptionsDoliSirhSectionState(!hasDoliSirh);
+
+            if (!hasDoliSirh) {
+                const testStatusDiv = document.getElementById('test-status-container');
+                if (testStatusDiv && !testStatusDiv.querySelector('.dolisirh-missing-warn')) {
+                    testStatusDiv.appendChild(createDoliSirhMissingBanner());
+                }
+            }
+        }
+
+        if (isManualClick && statusDiv) {
+            if (!hasDoliSirh && (modChecked || pRes.ok)) {
+                statusDiv.textContent = '';
+                statusDiv.appendChild(createDoliSirhMissingBanner());
+            } else if (pRes.ok) {
+                statusDiv.style.color = '#22c55e';
+                statusDiv.textContent = `\u2713 ${filteredProjectsCount} projet(s) charg\u00e9(s)`;
+                setTimeout(() => { if (statusDiv) statusDiv.textContent = ''; }, 3000);
+            } else {
+                statusDiv.style.color = '#e74c3c';
+                statusDiv.textContent = `\u2717 Impossible de charger les projets (${pRes.statusText || 'Erreur API'})`;
             }
         }
     } catch (e) {
-        console.error("Error fetching HR projects", e);
+        console.warn("Error fetching HR projects", e);
+        if (isManualClick && statusDiv) {
+            statusDiv.style.color = '#e74c3c';
+            statusDiv.textContent = '\u2717 Erreur lors de la r\u00e9cup\u00e9ration des projets';
+        }
+    } finally {
+        if (btn) {
+            btn.classList.remove('is-loading');
+            if (!btn.classList.contains('is-disabled-dolisirh')) {
+                btn.disabled = false;
+            }
+        }
     }
-
-    if (btn) btn.disabled = false;
 }
 
 async function loadHrTasks(profile, projectId, presenceSelect, absenceSelect) {
     if (!projectId) {
         presenceSelect.innerHTML = '';
         absenceSelect.innerHTML = '';
+        if (window.optionsHrPresenceSelect) window.optionsHrPresenceSelect.update();
+        if (window.optionsHrAbsenceSelect) window.optionsHrAbsenceSelect.update();
         return;
     }
 
@@ -565,6 +882,11 @@ async function loadHrTasks(profile, projectId, presenceSelect, absenceSelect) {
 
                 updateExclusions();
             }
+        } else {
+            presenceSelect.innerHTML = '';
+            absenceSelect.innerHTML = '';
+            if (window.optionsHrPresenceSelect) window.optionsHrPresenceSelect.update();
+            if (window.optionsHrAbsenceSelect) window.optionsHrAbsenceSelect.update();
         }
     } catch (e) {
         console.error("Error fetching HR tasks", e);
@@ -662,35 +984,72 @@ document.addEventListener('DOMContentLoaded', () => {
         testStatusDiv.textContent = "";
 
         statusDashboard.classList.remove('hidden');
-        renderPermissions({ connection: 'warning', users: 'warning', projects: 'warning' }, normalizedUrl);
+        renderPermissions({ connection: 'warning', dolisirh: 'warning', users: 'warning', projects: 'warning' }, normalizedUrl);
 
         const testResult = await testDolibarrConnection(normalizedUrl, login, password, entityVal);
 
         if (testResult.success) {
-            testStatusDiv.style.color = "#27ae60";
+            testStatusDiv.textContent = '';
             let msg = '✅ Connexion réussie !';
             if (testResult.entityName && testResult.entityName !== "Inconnue") {
                 msg += ` (🏢 ${testResult.entityName})`;
             }
-            testStatusDiv.textContent = msg;
+            const mainLine = document.createElement('div');
+            mainLine.style.color = '#27ae60';
+            mainLine.textContent = msg;
+            testStatusDiv.appendChild(mainLine);
 
-            renderPermissions({
+            if (!testResult.permissions?.dolisirh) {
+                testStatusDiv.appendChild(createDoliSirhMissingBanner());
+            }
+
+            const statusState = {
                 connection: 'ok',
+                dolisirh: testResult.permissions?.dolisirh ? 'ok' : 'ko',
                 users: testResult.permissions?.users ? 'ok' : 'ko',
                 projects: testResult.permissions?.projects ? 'ok' : 'ko',
                 date: new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
-            }, normalizedUrl);
+            };
+            renderPermissions(statusState, normalizedUrl);
+            updateOptionsDoliSirhSectionState(!testResult.permissions?.dolisirh);
 
             const p = getActiveProfile();
             if (p) {
-                if (testResult.apiToken) p.doliApiToken = testResult.apiToken;
+                p.doliUrl = normalizedUrl;
+                p.doliLogin = login;
+                p.doliEntity = entityVal;
+                p.doliStatus = statusState;
+                if (testResult.apiToken) {
+                    p.doliApiToken = testResult.apiToken;
+                    const passEl = document.getElementById('doli-password');
+                    if (passEl) passEl.value = testResult.apiToken;
+                }
+                const urlEl = document.getElementById('doli-url');
+                if (urlEl) urlEl.value = normalizedUrl;
                 if (testResult.permissions) p.permissions = testResult.permissions;
                 chrome.storage.sync.set({ doliProfiles: profiles });
+                await loadHrData(p);
             }
         } else {
             testStatusDiv.style.color = "#e74c3c";
-            testStatusDiv.textContent = chrome.i18n.getMessage('opt_js_137');
-            renderPermissions({ connection: 'ko', users: 'pending', projects: 'pending' }, normalizedUrl);
+            testStatusDiv.textContent = testResult.apiDisabled
+                ? (chrome.i18n.getMessage('opt_api_disabled_err') || '✗ Le module API/Web services est désactivé sur ce Dolibarr.')
+                : chrome.i18n.getMessage('opt_js_137');
+            const koState = {
+                connection: 'ko',
+                dolisirh: 'ko',
+                users: 'ko',
+                projects: 'ko',
+                date: new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+            };
+            renderPermissions(koState, normalizedUrl);
+            updateOptionsDoliSirhSectionState(true);
+            const p = getActiveProfile();
+            if (p) {
+                p.doliStatus = koState;
+                p.permissions = { users: false, projects: false, dolisirh: false };
+                chrome.storage.sync.set({ doliProfiles: profiles });
+            }
         }
 
         btnTest.disabled = false;
@@ -787,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnFetchHr) {
         btnFetchHr.addEventListener('click', () => {
-            loadHrData(getActiveProfile());
+            loadHrData(getActiveProfile(), true);
         });
     }
 

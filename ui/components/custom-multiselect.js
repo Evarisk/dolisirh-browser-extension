@@ -34,6 +34,11 @@ export class CustomMultiSelect {
         this.searchInput.type = 'text';
         this.searchInput.className = 'custom-multiselect-input';
         this.searchInput.placeholder = this.selectElement.dataset.placeholder || 'Sélectionner...';
+        if (this.selectElement.disabled) {
+            this.wrapper.classList.add('disabled');
+            this.tagsContainer.classList.add('disabled');
+            this.searchInput.disabled = true;
+        }
         
         this.tagsContainer.appendChild(this.searchInput);
 
@@ -154,10 +159,12 @@ export class CustomMultiSelect {
 
     bindEvents() {
         this.tagsContainer.addEventListener('click', () => {
+            if (this.selectElement.disabled) return;
             this.searchInput.focus();
         });
 
         this.searchInput.addEventListener('focus', () => {
+            if (this.selectElement.disabled) return;
             this.wrapper.classList.add('open');
             this.renderOptions(this.searchInput.value);
         });

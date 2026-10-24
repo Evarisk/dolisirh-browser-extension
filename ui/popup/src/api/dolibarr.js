@@ -34,9 +34,11 @@ export async function fetchDoli(url, options = {}) {
                 return reject(new Error(chrome.runtime.lastError.message));
             }
             if (response && response.error) {
+                const statusMatch = String(response.error).match(/Erreur HTTP (\d+)/i);
+                const parsedStatus = statusMatch ? parseInt(statusMatch[1], 10) : 500;
                 return resolve({
                     ok: false,
-                    status: 500,
+                    status: parsedStatus,
                     statusText: response.error,
                     json: async () => { throw new Error(response.error); },
                     text: async () => response.error

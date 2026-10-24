@@ -27,6 +27,19 @@
     box-sizing: border-box;
 }
 
+.custom-multiselect-tags.disabled {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.custom-multiselect-tags.disabled .custom-multiselect-input {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
 .custom-multiselect-wrapper.open .custom-multiselect-tags {
     border-color: #3498db;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);

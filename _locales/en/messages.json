@@ -967,5 +967,23 @@
   },
   "std_create_custom_task_btn_title": {
     "message": "Create task"
+  },
+  "opt_dolisirh_missing_warn": {
+    "message": "⚠️ The DoliSIRH module is not installed and/or not enabled on this Dolibarr instance."
+  },
+  "opt_perm_dolisirh_cat": {
+    "message": "DoliSIRH Module"
+  },
+  "opt_perm_dolisirh_title": {
+    "message": "DoliSIRH module installed and enabled"
+  },
+  "dolisirh_missing_msg": {
+    "message": "The API module is disabled or DoliSIRH is not installed and/or enabled. You can buy it on:"
+  },
+  "dolisirh_dolistore_link_label": {
+    "message": "Dolistore"
+  },
+  "opt_api_disabled_err": {
+    "message": "✗ The REST API/Web services module is disabled on this Dolibarr instance."
   }
 }
