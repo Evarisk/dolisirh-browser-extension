@@ -2052,12 +2052,22 @@ button.ts-hr-star-btn {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-button.ts-hr-star-btn:hover {
+button.ts-hr-star-btn:hover:not(:disabled) {
     background-color: #22c55e !important;
     border-color: #22c55e !important;
     color: white !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.3);
+}
+
+button.ts-hr-star-btn:disabled {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #cbd5e1 !important;
+    cursor: not-allowed !important;
+    opacity: 0.55;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 button.ts-hr-star-btn.ts-star-active {
