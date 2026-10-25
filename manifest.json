@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "DoliSIRH",
-    "version": "1.0.0",
+    "version": "23.0.3",
     "default_locale": "fr",
     "description": "Extension navigateur DoliSIRH pour le suivi du temps, des présences et des projets RH dans Dolibarr",
     "icons": {
@@ -22,25 +22,11 @@
         "service_worker": "src/background/background.js",
         "type": "module"
     },
-    "host_permissions": [],
     "optional_host_permissions": [
         "https://*/*",
         "http://*/*"
     ],
     "permissions": [
-        "storage",
-        "unlimitedStorage"
-    ],
-    "web_accessible_resources": [
-        {
-            "resources": [
-                "icon32.png",
-                "icon128.png",
-                "icon192.png"
-            ],
-            "matches": [
-                "<all_urls>"
-            ]
-        }
+        "storage"
     ]
 }

@@ -1,0 +1,91 @@
+name: Release Extension ZIP
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Package Chrome Extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate manifest, locales & JS syntax
+        id: meta
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            if (manifest.manifest_version !== 3) {
+              throw new Error('Expected manifest_version 3');
+            }
+            for (const [size, iconPath] of Object.entries(manifest.icons || {})) {
+              const buf = fs.readFileSync(iconPath);
+              const w = buf.readUInt32BE(16);
+              const h = buf.readUInt32BE(20);
+              const expected = Number(size);
+              if (w !== expected || h !== expected) {
+                throw new Error(\`Icon \${iconPath} declared as \${size}x\${size} but actual PNG dimensions are \${w}x\${h}\`);
+              }
+            }
+            const refName = process.env.GITHUB_REF_NAME || '';
+            const isTag = process.env.GITHUB_REF_TYPE === 'tag';
+            if (isTag) {
+              const normalizedTagVersion = refName.replace(/^v/, '').split('.').map(Number).join('.');
+              if (normalizedTagVersion !== manifest.version) {
+                throw new Error(\`Tag version (\${refName} -> \${normalizedTagVersion}) does not match manifest.json version (\${manifest.version})\`);
+              }
+            }
+            for (const locale of ['fr', 'en', 'es', 'de', 'it']) {
+              const p = \`_locales/\${locale}/messages.json\`;
+              JSON.parse(fs.readFileSync(p, 'utf8'));
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, \`version=\${manifest.version}\n\`);
+          "
+          find src ui -name "*.js" -exec node --check {} +
+
+      - name: Create distribution ZIP
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          ZIP_NAME="dolisirh-chrome-v${VERSION}.zip"
+          mkdir -p dist
+          zip -r "dist/${ZIP_NAME}" \
+            manifest.json \
+            LICENSE \
+            icon32.png \
+            icon128.png \
+            icon192.png \
+            _locales \
+            src \
+            ui \
+            -x "*.DS_Store" "*/.DS_Store" "*.git*"
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "zip_path=dist/${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+        id: package
+
+      - name: Upload ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.zip_name }}
+          path: ${{ steps.package.outputs.zip_path }}
+          retention-days: 90
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.zip_path }}
+          generate_release_notes: true
