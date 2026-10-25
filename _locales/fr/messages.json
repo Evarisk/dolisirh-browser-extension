@@ -723,18 +723,18 @@
     "message": "Erreur réseau lors de l'affectation du contact."
   },
   "error_4005": {
-    "message": "Opportunité créée (), mais impossible d'y joindre le fichier. Vérifiez vos droits ou le format du fichier.",
+    "message": "Opportunité créée ($1), mais impossible d'y joindre le fichier. Vérifiez vos droits ou le format du fichier.",
     "placeholders": {
       "1": {
-        "content": ""
+        "content": "$1"
       }
     }
   },
   "error_4006": {
-    "message": "Ticket créé (), mais impossible d'y joindre le fichier. Vérifiez vos droits, ou assurez-vous que l'API supporte cet envoi (Dolibarr v23+ ou PR#37499).",
+    "message": "Ticket créé ($1), mais impossible d'y joindre le fichier. Vérifiez vos droits, ou assurez-vous que l'API supporte cet envoi (Dolibarr v23+ ou PR#37499).",
     "placeholders": {
       "1": {
-        "content": ""
+        "content": "$1"
       }
     }
   },

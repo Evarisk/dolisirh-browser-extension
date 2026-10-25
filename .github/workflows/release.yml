@@ -51,7 +51,16 @@ jobs:
             }
             for (const locale of ['fr', 'en', 'es', 'de', 'it']) {
               const p = \`_locales/\${locale}/messages.json\`;
-              JSON.parse(fs.readFileSync(p, 'utf8'));
+              const messages = JSON.parse(fs.readFileSync(p, 'utf8'));
+              for (const [key, entry] of Object.entries(messages)) {
+                if (entry.placeholders) {
+                  for (const [phName, phDef] of Object.entries(entry.placeholders)) {
+                    if (!phDef.content || !String(phDef.content).trim()) {
+                      throw new Error(\`\${p}: placeholder '\${phName}' in '\${key}' has empty content\`);
+                    }
+                  }
+                }
+              }
             }
             fs.appendFileSync(process.env.GITHUB_OUTPUT, \`version=\${manifest.version}\n\`);
           "

@@ -699,18 +699,18 @@
     "message": "Network error while assigning contact."
   },
   "error_4005": {
-    "message": "Opportunity created (), but unable to attach file. Check your permissions or the file format.",
+    "message": "Opportunity created ($1), but unable to attach file. Check your permissions or the file format.",
     "placeholders": {
       "1": {
-        "content": ""
+        "content": "$1"
       }
     }
   },
   "error_4006": {
-    "message": "Ticket created (), but unable to attach file. Check your permissions, or ensure the API supports this feature (Dolibarr v23+ or PR#37499).",
+    "message": "Ticket created ($1), but unable to attach file. Check your permissions, or ensure the API supports this feature (Dolibarr v23+ or PR#37499).",
     "placeholders": {
       "1": {
-        "content": ""
+        "content": "$1"
       }
     }
   },
@@ -985,5 +985,29 @@
   },
   "opt_api_disabled_err": {
     "message": "✗ The REST API/Web services module is disabled on this Dolibarr instance."
+  },
+  "popup_quick_opp_count": {
+    "message": "Open opportunities ($1)"
+  },
+  "popup_quick_month": {
+    "message": "This month"
+  },
+  "popup_quick_week": {
+    "message": "This week"
+  },
+  "popup_quick_yesterday": {
+    "message": "Yesterday"
+  },
+  "popup_quick_all": {
+    "message": "All"
+  },
+  "opt_list_count": {
+    "message": "Number of items in lists (Default: 5)"
+  },
+  "opt_api_limit": {
+    "message": "Max API results for Tickets / Opps / Projects (Default: 100)"
+  },
+  "opt_api_limit_tiers": {
+    "message": "Max API results for Third-parties / Contacts (Default: 500)"
   }
 }

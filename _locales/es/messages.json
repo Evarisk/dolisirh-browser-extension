@@ -697,5 +697,317 @@
   },
   "time_monthly_mode": {
     "message": "Mensual"
+  },
+  "popup_js_err_percent": {
+    "message": "Percentage must be between 0 and 100",
+    "description": "Error message when probability is not 0-100"
+  },
+  "popup_js_err_amount": {
+    "message": "Invalid amount (digits only)",
+    "description": "Error message when amount is not a valid number"
+  },
+  "popup_js_err_email": {
+    "message": "Please enter a valid email address",
+    "description": "Error message when email is invalid"
+  },
+  "popup_js_err_save": {
+    "message": "Unable to save modification: ",
+    "description": "Error message when inline edit fails"
+  },
+  "popup_quick_opp_count": {
+    "message": "Open opportunities ($1)"
+  },
+  "popup_quick_month": {
+    "message": "This month"
+  },
+  "popup_quick_week": {
+    "message": "This week"
+  },
+  "popup_quick_yesterday": {
+    "message": "Yesterday"
+  },
+  "popup_quick_all": {
+    "message": "All"
+  },
+  "opt_list_count": {
+    "message": "Number of items in lists (Default: 5)"
+  },
+  "opt_api_limit": {
+    "message": "Max API results for Tickets / Opps / Projects (Default: 100)"
+  },
+  "opt_api_limit_tiers": {
+    "message": "Max API results for Third-parties / Contacts (Default: 500)"
+  },
+  "error_capture_timeout": {
+    "message": "The capture request timed out. Please try again."
+  },
+  "error_capture_forbidden": {
+    "message": "Page capture forbidden"
+  },
+  "error_capture_forbidden_hover": {
+    "message": "Forbidden pages: chrome://, chrome-extension://, edge://, google.com, webstore"
+  },
+  "error_capture_forbidden_link": {
+    "message": "(See forbidden pages)"
+  },
+  "error_capture_refresh": {
+    "message": "Please refresh the target page (F5) and try the capture again."
+  },
+  "error_5099": {
+    "message": "Unexpected error during capture: $1",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "popup_upload_title": {
+    "message": "Browse"
+  },
+  "popup_upload_subtitle": {
+    "message": "drag your files"
+  },
+  "popup_upload_hint": {
+    "message": "(Ctrl+V)"
+  },
+  "popup_capture": {
+    "message": "Capture"
+  },
+  "popup_create_ticket": {
+    "message": "Ticket"
+  },
+  "popup_create_opp": {
+    "message": "Opportunity"
+  },
+  "error_4002": {
+    "message": "Error while saving the opportunity. Check your data."
+  },
+  "error_4004": {
+    "message": "Error while saving the ticket. Check your data."
+  },
+  "error_4001": {
+    "message": "Unable to assign contact. Check your permissions."
+  },
+  "error_4003": {
+    "message": "Network error while assigning contact."
+  },
+  "error_4005": {
+    "message": "Opportunity created ($1), but unable to attach file. Check your permissions or the file format.",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "error_4006": {
+    "message": "Ticket created ($1), but unable to attach file. Check your permissions, or ensure the API supports this feature (Dolibarr v23+ or PR#37499).",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "popup_ticket_list": {
+    "message": "Tickets"
+  },
+  "popup_title_ticket_list": {
+    "message": "Liste des tickets"
+  },
+  "opt_pointage_rh": {
+    "message": "Time Tracking & Human Resources"
+  },
+  "opt_pointage_desc": {
+    "message": "Configuration of the project used for tracking presence and absence."
+  },
+  "opt_hr_project": {
+    "message": "Human Resources Project"
+  },
+  "opt_hr_presence_tasks": {
+    "message": "Presence Tasks (WORK_TIME)"
+  },
+  "opt_hr_absence_tasks": {
+    "message": "Absence Tasks (NON_WORK_TIME)"
+  },
+  "time_project": {
+    "message": "Project"
+  },
+  "time_task": {
+    "message": "Task"
+  },
+  "time_select_project": {
+    "message": "Select a project"
+  },
+  "time_select_task": {
+    "message": "Select a task"
+  },
+  "time_presence": {
+    "message": "Presence (Work)"
+  },
+  "time_absence": {
+    "message": "Absence"
+  },
+  "time_date": {
+    "message": "Date"
+  },
+  "time_duration": {
+    "message": "Duration (HH:MM)"
+  },
+  "time_note": {
+    "message": "Note / Comment"
+  },
+  "time_note_placeholder": {
+    "message": "Ex: Progress meeting..."
+  },
+  "time_save": {
+    "message": "Save Time"
+  },
+  "popup_title_timesheet": {
+    "message": "Time Tracking"
+  },
+  "time_card_loading": {
+    "message": "Loading..."
+  },
+  "time_card_no_task": {
+    "message": "No task configured"
+  },
+  "time_card_hr_not_configured": {
+    "message": "HR Project not configured. Go to settings."
+  },
+  "time_card_note_placeholder": {
+    "message": "Note / Comment..."
+  },
+  "time_card_save_title": {
+    "message": "Save this time"
+  },
+  "time_card_duration_title": {
+    "message": "Duration (HH:MM)"
+  },
+  "time_card_saved": {
+    "message": "✓ Saved"
+  },
+  "time_card_error_network": {
+    "message": "✗ Network error"
+  },
+  "time_card_error_prefix": {
+    "message": "✗ Error:"
+  },
+  "time_card_network_error_load": {
+    "message": "Network error"
+  },
+  "opt_hr_schedule": {
+    "message": "Expected attendance per day"
+  },
+  "opt_hr_schedule_hint": {
+    "message": "Format HH:MM (e.g. 07:30)"
+  },
+  "opt_hr_save": {
+    "message": "Save HR configuration"
+  },
+  "opt_hr_day_lun": {
+    "message": "Mon"
+  },
+  "opt_hr_day_mar": {
+    "message": "Tue"
+  },
+  "opt_hr_day_mer": {
+    "message": "Wed"
+  },
+  "opt_hr_day_jeu": {
+    "message": "Thu"
+  },
+  "opt_hr_day_ven": {
+    "message": "Fri"
+  },
+  "opt_hr_day_sam": {
+    "message": "Sat"
+  },
+  "opt_hr_day_dim": {
+    "message": "Sun"
+  },
+  "error_5001": {
+    "message": "Invalid duration. Please enter a duration before saving."
+  },
+  "error_5002": {
+    "message": "Failed to log time. Check your connection and API permissions ($1)."
+  },
+  "error_5003": {
+    "message": "Network error while logging time. Please try again."
+  },
+  "error_5004": {
+    "message": "No HR project configured. Go to options to set it up."
+  },
+  "error_5005": {
+    "message": "Failed to load HR project tasks. Check your connection ($1)."
+  },
+  "time_card_load_title": {
+    "message": "Click to load existing time logged for this day"
+  },
+  "time_card_loaded": {
+    "message": "✓ Existing time loaded"
+  },
+  "time_card_open_doli_title": {
+    "message": "Open task in Dolibarr"
+  },
+  "opt_hr_start_label": {
+    "message": "Start"
+  },
+  "opt_hr_duration_label": {
+    "message": "Duration"
+  },
+  "error_5006": {
+    "message": "Sales rep assignment error"
+  },
+  "commercial_assign": {
+    "message": "Assign a sales rep"
+  },
+  "commercial_assigned": {
+    "message": "Sales reps: $1",
+    "placeholders": {
+      "names": {
+        "content": "$1"
+      }
+    }
+  },
+  "commercial_none": {
+    "message": "C-??"
+  },
+  "error_unknown": {
+    "message": "Unknown error"
+  },
+  "nav_open_dolibarr_title": {
+    "message": "Open Dolibarr"
+  },
+  "std_hist_tooltip_client": {
+    "message": "Thirdparty"
+  },
+  "std_hist_tooltip_project": {
+    "message": "Project"
+  },
+  "std_hist_tooltip_task": {
+    "message": "Task"
+  },
+  "std_spent_last_entries_title": {
+    "message": "Spent time (last 5 entries):"
+  },
+  "std_create_custom_task_btn_title": {
+    "message": "Create task"
+  },
+  "opt_dolisirh_missing_warn": {
+    "message": "⚠️ The DoliSIRH module is not installed and/or not enabled on this Dolibarr instance."
+  },
+  "opt_perm_dolisirh_cat": {
+    "message": "DoliSIRH Module"
+  },
+  "opt_perm_dolisirh_title": {
+    "message": "DoliSIRH module installed and enabled"
+  },
+  "dolisirh_missing_msg": {
+    "message": "The API module is disabled or DoliSIRH is not installed and/or enabled. You can buy it on:"
+  },
+  "dolisirh_dolistore_link_label": {
+    "message": "Dolistore"
+  },
+  "opt_api_disabled_err": {
+    "message": "✗ The REST API/Web services module is disabled on this Dolibarr instance."
   }
 }
