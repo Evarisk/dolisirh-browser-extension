@@ -1112,6 +1112,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const saveToStorage = () => {
+            // Noms d'entites (absence de MultiCompany gardee 30 jours) et echec du logo relus a la
+            // prochaine ouverture : un module ou un droit ajoute se voit tout de suite.
+            try {
+                chrome.storage.local.remove([`doliEntityNames_${p.id || p.doliUrl}`, `doliLogo_${p.id || 'default'}_failedAt`], () => void chrome.runtime.lastError);
+            } catch (_) {}
             chrome.storage.sync.set({
                 doliProfiles: profiles,
                 doliActiveProfileId: activeProfileId
