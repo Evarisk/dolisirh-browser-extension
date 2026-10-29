@@ -39,8 +39,8 @@ const apiCall = async (url, options = {}, retries = 0) => {
         
         if (!response.ok) {
             // Erreur HTTP != 2xx
-            if (retries < MAX_RETRIES && (response.status >= 500 || response.status === 429)) {
-                // Retry only on server errors or rate limiting
+            if (retries < MAX_RETRIES && ((response.status >= 500 && response.status !== 501) || response.status === 429)) {
+                // Retry only on server errors or rate limiting ; 501 (API absente) ne change pas d'un essai a l'autre
                 console.warn(`[API] Echec ${response.status} sur ${url}. Tentative ${retries + 1}/${MAX_RETRIES}...`);
                 await new Promise(res => setTimeout(res, 1000 * (retries + 1))); // backoff
                 return await apiCall(url, options, retries + 1);

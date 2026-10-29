@@ -1708,6 +1708,7 @@ function renderProjectsForActiveEntity() {
 }
 
 const ENTITY_NAMES_TTL_MS = 24 * 3600 * 1000;
+const MULTICOMPANY_ABSENT_TTL_MS = 30 * 24 * 3600 * 1000;
 
 /**
  * Cle du cache des noms d'entites dans storage.local : un par profil.
@@ -1718,19 +1719,28 @@ function entityNamesCacheKey() {
 }
 
 /**
- * Noms d'entites deja lus par l'API pour le profil actif, s'ils ont moins de 24 h.
+ * Noms d'entites deja lus par l'API pour le profil actif, s'ils ont moins de 24 h ; l'absence du
+ * module MultiCompany tient 30 jours (mcAt), installer ce module est rare. Les options vident ce
+ * cache a l'enregistrement du profil.
  * multicompany : null tant que /multicompany n'a pas repondu, [] s'il est absent ;
  * companies : nom par entite, '' quand /setup/company l'a refuse.
- * @returns {Promise<{at: number, multicompany: (Array|null), companies: Object}>}
+ * @returns {Promise<{at: number, mcAt: number, multicompany: (Array|null), companies: Object}>}
  */
 async function readEntityNamesCache() {
     const key = entityNamesCacheKey();
+    const now = Date.now();
+    const fresh = { at: now, mcAt: 0, multicompany: null, companies: {} };
     try {
         const items = await chrome.storage.local.get(key);
         const cached = items && items[key];
-        if (cached && cached.companies && Date.now() - cached.at < ENTITY_NAMES_TTL_MS) return cached;
+        if (cached && cached.companies && now - cached.at < ENTITY_NAMES_TTL_MS) return cached;
+        if (cached && Array.isArray(cached.multicompany) && cached.multicompany.length === 0
+            && now - (cached.mcAt || cached.at) < MULTICOMPANY_ABSENT_TTL_MS) {
+            fresh.multicompany = [];
+            fresh.mcAt = cached.mcAt || cached.at;
+        }
     } catch (_) {}
-    return { at: Date.now(), multicompany: null, companies: {} };
+    return fresh;
 }
 
 /**
@@ -1818,6 +1828,7 @@ async function loadStandardProjects() {
                 } else if (isDefinitiveApiRefusal(mcRes)) {
                     entityNamesCache.multicompany = [];
                 }
+                if (Array.isArray(entityNamesCache.multicompany)) entityNamesCache.mcAt = Date.now();
             } catch (_) {}
         }
         (entityNamesCache.multicompany || []).forEach(ent => {
