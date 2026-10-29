@@ -1,4 +1,5 @@
 import { MESSAGE_TYPES } from '../../src/utils/constants.js';
+import { getDoliApiCandidates } from '../../src/utils/doli-url.js';
 import { CustomSelect } from '../components/custom-select.js';
 import { CustomMultiSelect } from '../components/custom-multiselect.js';
 
@@ -538,18 +539,24 @@ function classifyDefaultHrTask(task) {
 }
 
 /**
- * Normalise une URL Dolibarr saisie dans le formulaire vers son endpoint /api/index.php.
- * @param {string} rawUrl
- * @returns {string}
+ * Retient, parmi les URLs candidates, la premiere qui repond comme une API Dolibarr.
+ * Un 401 ou un 403 suffit : l'API est la, seule la cle est refusee (un mot de passe, par exemple).
+ * @param {string} rawUrl - URL saisie dans le formulaire
+ * @param {string} apiKey - Cle API ou mot de passe saisi
+ * @returns {Promise<string>} URL se terminant par /api/index.php (la premiere candidate si aucune ne repond)
  */
-function normalizeDoliApiUrl(rawUrl) {
-    let normalizedUrl = (rawUrl || '').trim().replace(/\/+$/, '');
-    if (!normalizedUrl) return '';
-    if (!normalizedUrl.endsWith('/api/index.php')) {
-        if (normalizedUrl.endsWith('/htdocs')) normalizedUrl += '/api/index.php';
-        else if (!normalizedUrl.includes('/api/index.php')) normalizedUrl += '/htdocs/api/index.php';
+async function resolveDoliApiUrl(rawUrl, apiKey) {
+    const candidates = getDoliApiCandidates(rawUrl);
+    if (candidates.length === 1) return candidates[0];
+    for (const candidate of candidates) {
+        try {
+            const res = await fetchDoli(`${candidate}/status`, { headers: { 'DOLAPIKEY': apiKey || '' } });
+            if (res.ok || res.status === 401 || res.status === 403 || String(res.statusText || '').includes('API_DISABLED')) {
+                return candidate;
+            }
+        } catch (_) {}
     }
-    return normalizedUrl;
+    return candidates[0];
 }
 
 async function loadHrData(profile, isManualClick = false) {
@@ -567,8 +574,8 @@ async function loadHrData(profile, isManualClick = false) {
     const formPass = document.getElementById('doli-password')?.value?.trim() || '';
     const formEntity = document.getElementById('doli-entity')?.value?.trim() || '';
 
-    if (formUrlRaw) {
-        profile.doliUrl = normalizeDoliApiUrl(formUrlRaw);
+    if (formUrlRaw && !getDoliApiCandidates(formUrlRaw).includes(profile.doliUrl)) {
+        profile.doliUrl = await resolveDoliApiUrl(formUrlRaw, formPass || profile.doliApiToken);
     }
     if (formLogin) {
         profile.doliLogin = formLogin;
@@ -973,11 +980,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let normalizedUrl = url.trim().replace(/\/+$/, '');
-        if (!normalizedUrl.endsWith('/api/index.php')) {
-            if (normalizedUrl.endsWith('/htdocs')) normalizedUrl += '/api/index.php';
-            else if (!normalizedUrl.includes('/api/index.php')) normalizedUrl += '/htdocs/api/index.php';
-        }
+        const candidates = getDoliApiCandidates(url);
+        let normalizedUrl = candidates[0];
 
         btnTest.disabled = true;
         btnTest.textContent = chrome.i18n.getMessage('opt_js_136');
@@ -986,7 +990,14 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDashboard.classList.remove('hidden');
         renderPermissions({ connection: 'warning', dolisirh: 'warning', users: 'warning', projects: 'warning' }, normalizedUrl);
 
-        const testResult = await testDolibarrConnection(normalizedUrl, login, password, entityVal);
+        let testResult = { success: false };
+        for (const candidate of candidates) {
+            testResult = await testDolibarrConnection(candidate, login, password, entityVal);
+            if (testResult.success || testResult.apiDisabled) {
+                normalizedUrl = candidate;
+                break;
+            }
+        }
 
         if (testResult.success) {
             testStatusDiv.textContent = '';
@@ -1070,12 +1081,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let normalizedUrl = url.trim().replace(/\/+$/, '');
-        if (!normalizedUrl.endsWith('/api/index.php')) {
-            if (normalizedUrl.endsWith('/htdocs')) normalizedUrl += '/api/index.php';
-            else if (!normalizedUrl.includes('/api/index.php')) normalizedUrl += '/htdocs/api/index.php';
-            urlInput.value = normalizedUrl;
-        }
+        const candidates = getDoliApiCandidates(url);
+        const normalizedUrl = candidates[0];
+        urlInput.value = normalizedUrl;
 
         btn.disabled = true;
         btn.textContent = chrome.i18n.getMessage('opt_js_144');
@@ -1129,6 +1137,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
+        // Une fois l'origine autorisee : avec ou sans /htdocs, garder l'URL ou l'API repond.
+        const resolveAndSave = async () => {
+            if (candidates.length > 1) {
+                p.doliUrl = await resolveDoliApiUrl(url, p.doliApiToken);
+                urlInput.value = p.doliUrl;
+            }
+            saveToStorage();
+        };
+
         try {
             const urlObj = new URL(p.doliUrl || 'https://example.com');
             const originPattern = urlObj.origin + "/*";
@@ -1139,10 +1156,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusDiv.style.color = "#f39c12";
                     statusDiv.textContent = '⚠️ ' + chrome.i18n.getMessage("error_permission_denied");
                 }
-                saveToStorage();
+                resolveAndSave();
             });
         } catch (e) {
-            saveToStorage();
+            resolveAndSave();
         }
     });
 
