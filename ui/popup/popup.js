@@ -353,15 +353,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, { once: true });
 
                 const cacheKey = `doliLogo_${p.id || 'default'}`;
-                try {
-                    chrome.storage.local.get([cacheKey], (cached) => {
-                        if (!chrome.runtime.lastError && cached && cached[cacheKey]) {
-                            showFavicon(cached[cacheKey]);
-                        }
-                    });
-                } catch (_) {}
+                // Logo lu il y a moins de 7 jours, ou echec il y a moins de 24 h : pas d'appel. Sans droit
+                // d'administration, /setup/company repond 403 a chaque ouverture de la popup.
+                const atKey = `${cacheKey}_at`;
+                const failedKey = `${cacheKey}_failedAt`;
+                const showFallback = () => {
+                    try {
+                        const domain = new URL(p.doliUrl).origin;
+                        showFavicon(`https://www.google.com/s2/favicons?domain=${domain}&sz=32`);
+                    } catch (_) {
+                        showFavicon('../../icon32.png');
+                    }
+                };
 
                 (async () => {
+                    let cached = {};
+                    try {
+                        cached = (await chrome.storage.local.get([cacheKey, atKey, failedKey])) || {};
+                    } catch (_) {}
+                    if (cached[cacheKey]) showFavicon(cached[cacheKey]);
+                    const now = Date.now();
+                    if (cached[cacheKey] && now - (cached[atKey] || 0) < 7 * 24 * 3600 * 1000) return;
+                    if (now - (cached[failedKey] || 0) < 24 * 3600 * 1000) {
+                        if (!cached[cacheKey]) showFallback();
+                        return;
+                    }
                     try {
                         const headers = { 'DOLAPIKEY': p.doliApiToken, 'Accept': 'application/json' };
                         if (p.doliEntity) headers['DOLAPIENTITY'] = String(p.doliEntity).trim();
@@ -393,19 +409,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             const dataUri = `data:${contentType};base64,${docData.content}`;
                             showFavicon(dataUri);
                             try {
-                                chrome.storage.local.set({ [cacheKey]: dataUri });
+                                chrome.storage.local.set({ [cacheKey]: dataUri, [atKey]: Date.now() });
                             } catch (_) {}
                             return;
                         }
                         throw new Error('Empty logo content');
                     } catch (_) {
                         try {
-                            const domain = new URL(p.doliUrl).origin;
-                            const fallbackUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-                            showFavicon(fallbackUrl);
-                        } catch (_) {
-                            showFavicon('../../icon32.png');
-                        }
+                            chrome.storage.local.set({ [failedKey]: Date.now() });
+                        } catch (_) {}
+                        if (!cached[cacheKey]) showFallback();
                     }
                 })();
             }
