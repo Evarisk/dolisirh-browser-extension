@@ -778,7 +778,31 @@ function updateHrProjectInfo() {
     if (monthlyHours) monthlyHours.textContent = '—'; // sera mis à jour par fetchMonthlyHours
 }
 
-async function updateDailyTimespentStats() {
+/**
+ * Lignes de temps de l'utilisateur sur une tâche RH, gardées pour la session de la popup.
+ * La réponse de l'API porte les lignes de tous les utilisateurs et le filtrage par jour se fait ici :
+ * la relire à chaque changement de jour ou de semaine multipliait les appels sans rien apprendre.
+ * @param {string|number} taskId
+ * @param {Object} reqHeaders
+ * @param {boolean} forceRefresh true après une saisie ou une suppression
+ * @returns {Promise<Array|null>} lignes de l'utilisateur, null si l'API échoue
+ */
+async function getHrTaskLines(taskId, reqHeaders, forceRefresh) {
+    const key = String(taskId);
+    if (!forceRefresh && Array.isArray(hrTaskLinesCache[key])) return hrTaskLinesCache[key];
+    const res = await fetchDoli(`${doliUrl}/tasks/${taskId}?includetimespent=2`, { headers: reqHeaders });
+    if (!res.ok) return null;
+    const task = await res.json();
+    const allLines = Array.isArray(task.lines) ? task.lines : [];
+    hrTaskLinesCache[key] = allLines.filter(e => String(e.timespent_line_fk_user || '') === globalCurrentUserId);
+    return hrTaskLinesCache[key];
+}
+
+/**
+ * Totaux et historique du jour sélectionné sur les cartes Présence / Absence.
+ * @param {boolean} [forceRefresh=false] true pour relire les tâches RH par l'API (après saisie ou suppression)
+ */
+async function updateDailyTimespentStats(forceRefresh = false) {
     const presSpan = document.getElementById('ts-pres-stats');
     const absSpan = document.getElementById('ts-abs-stats');
     if (!presSpan && !absSpan) return;
@@ -855,13 +879,9 @@ async function updateDailyTimespentStats() {
     try {
         const fetchPromises = allIds.map(async (taskId) => {
             try {
-                const res = await fetchDoli(`${doliUrl}/tasks/${taskId}?includetimespent=2`, { headers: reqHeaders });
-                if (res.ok) {
-                    const task = await res.json();
-                    const allLines = Array.isArray(task.lines) ? task.lines : [];
-                    const myLines = allLines.filter(e => String(e.timespent_line_fk_user || '') === globalCurrentUserId);
-                    hrTaskLinesCache[String(taskId)] = myLines;
-                    
+                const myLines = await getHrTaskLines(taskId, reqHeaders, forceRefresh);
+                if (myLines) {
+
                     let taskTodaySec = 0;
                     let lastNote = '';
                     myLines.forEach(e => {
@@ -992,7 +1012,7 @@ async function updateDailyTimespentStats() {
                                                 }
 
                                                 if (success) {
-                                                    updateDailyTimespentStats(); // Recharge
+                                                    updateDailyTimespentStats(true); // Recharge
                                                 } else {
                                                     console.warn('Echec suppression sur tous les endpoints');
                                                     trashBtn.style.opacity = '1';
@@ -1363,7 +1383,10 @@ export function initTimesheet(url, token, entity, profile) {
     buildWeekPicker();
     updateHrProjectInfo();
 
-    // Navigation semaine précédente / suivante
+    if (isTimesheetInitialized) return;
+    isTimesheetInitialized = true;
+
+    // Navigation semaine précédente / suivante : posée une seule fois, saveSetup() relance initTimesheet()
     document.getElementById('ts-week-prev')?.addEventListener('click', () => {
         selectedDate.setDate(selectedDate.getDate() - 7);
         const dStr = toLocalDateStr(selectedDate);
@@ -1384,9 +1407,6 @@ export function initTimesheet(url, token, entity, profile) {
         updateHrProjectInfo();
         updateDailyTimespentStats();
     });
-
-    if (isTimesheetInitialized) return;
-    isTimesheetInitialized = true;
 
     // SETUP LISTENERS
     const setupProjSelect = document.getElementById('time-setup-project');
@@ -1687,6 +1707,53 @@ function renderProjectsForActiveEntity() {
     }
 }
 
+const ENTITY_NAMES_TTL_MS = 24 * 3600 * 1000;
+
+/**
+ * Cle du cache des noms d'entites dans storage.local : un par profil.
+ * @returns {string}
+ */
+function entityNamesCacheKey() {
+    return `doliEntityNames_${profileConfig?.id || doliUrl}`;
+}
+
+/**
+ * Noms d'entites deja lus par l'API pour le profil actif, s'ils ont moins de 24 h.
+ * multicompany : null tant que /multicompany n'a pas repondu, [] s'il est absent ;
+ * companies : nom par entite, '' quand /setup/company l'a refuse.
+ * @returns {Promise<{at: number, multicompany: (Array|null), companies: Object}>}
+ */
+async function readEntityNamesCache() {
+    const key = entityNamesCacheKey();
+    try {
+        const items = await chrome.storage.local.get(key);
+        const cached = items && items[key];
+        if (cached && cached.companies && Date.now() - cached.at < ENTITY_NAMES_TTL_MS) return cached;
+    } catch (_) {}
+    return { at: Date.now(), multicompany: null, companies: {} };
+}
+
+/**
+ * Enregistre les noms d'entites lus (voir readEntityNamesCache).
+ * @param {Object} cache
+ */
+function writeEntityNamesCache(cache) {
+    try {
+        chrome.storage.local.set({ [entityNamesCacheKey()]: cache }, () => void chrome.runtime.lastError);
+    } catch (_) {}
+}
+
+/**
+ * Refus de l'API qui ne changera pas a la prochaine ouverture (droit manquant, route absente, module
+ * absent : 501, ou 502 quand Dolibarr 24.0.2 repond « API not found » en texte). Une panne reseau ou un
+ * timeout ne sont pas retenus.
+ * @param {{ok: boolean, status: number}} res Reponse de fetchDoli
+ * @returns {boolean}
+ */
+function isDefinitiveApiRefusal(res) {
+    return [403, 404, 501, 502].includes(res.status);
+}
+
 /**
  * Decouvre les entites disponibles, alimente le selecteur #doli-active-entity en haut,
  * et charge les projets sans melanger les entites.
@@ -1733,23 +1800,30 @@ async function loadStandardProjects() {
         if (doliEntity) entityIdsSet.add(String(doliEntity));
         if (entityIdsSet.size === 0) entityIdsSet.add('1');
 
-        // Tenter de recuperer les noms officiels via /multicompany (si module API active)
-        try {
-            const mcRes = await fetchDoli(`${doliUrl}/multicompany`, { headers: baseHeaders });
-            if (mcRes.ok) {
-                const mcData = await mcRes.json();
-                if (Array.isArray(mcData)) {
-                    mcData.forEach(ent => {
-                        const eid = String(ent.id || ent.rowid || '');
-                        const elabel = decodeHtmlEntities(ent.label || ent.name || '');
-                        if (eid) {
-                            entityIdsSet.add(eid);
-                            if (elabel) entitiesLabelMap[eid] = elabel;
-                        }
-                    });
+        // Noms officiels via /multicompany puis /setup/company, gardes 24 h, refus compris : sans le module
+        // MultiCompany, /multicompany repond « API not found » et /setup/company 403 aux non-administrateurs.
+        const entityNamesCache = await readEntityNamesCache();
+        if (!Array.isArray(entityNamesCache.multicompany)) {
+            try {
+                const mcRes = await fetchDoli(`${doliUrl}/multicompany`, { headers: baseHeaders });
+                if (mcRes.ok) {
+                    const mcData = await mcRes.json();
+                    entityNamesCache.multicompany = [];
+                    if (Array.isArray(mcData)) {
+                        mcData.forEach(ent => {
+                            const eid = String(ent.id || ent.rowid || '');
+                            if (eid) entityNamesCache.multicompany.push({ id: eid, label: decodeHtmlEntities(ent.label || ent.name || '') });
+                        });
+                    }
+                } else if (isDefinitiveApiRefusal(mcRes)) {
+                    entityNamesCache.multicompany = [];
                 }
-            }
-        } catch (_) {}
+            } catch (_) {}
+        }
+        (entityNamesCache.multicompany || []).forEach(ent => {
+            entityIdsSet.add(ent.id);
+            if (ent.label) entitiesLabelMap[ent.id] = ent.label;
+        });
 
         const sortedEntityIds = Array.from(entityIdsSet).sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0));
 
@@ -1757,18 +1831,24 @@ async function loadStandardProjects() {
         const companyNamesByEntity = {};
         await Promise.all(sortedEntityIds.map(async (eid) => {
             if (entitiesLabelMap[eid]) return;
+            if (eid in entityNamesCache.companies) {
+                if (entityNamesCache.companies[eid]) companyNamesByEntity[eid] = entityNamesCache.companies[eid];
+                return;
+            }
             try {
                 const compRes = await fetchDoli(`${doliUrl}/setup/company`, {
                     headers: { ...baseHeaders, 'DOLAPIENTITY': eid }
                 });
                 if (compRes.ok) {
                     const compData = await compRes.json();
-                    if (compData && compData.name) {
-                        companyNamesByEntity[eid] = decodeHtmlEntities(String(compData.name).trim());
-                    }
+                    entityNamesCache.companies[eid] = compData && compData.name ? decodeHtmlEntities(String(compData.name).trim()) : '';
+                    if (entityNamesCache.companies[eid]) companyNamesByEntity[eid] = entityNamesCache.companies[eid];
+                } else if (isDefinitiveApiRefusal(compRes)) {
+                    entityNamesCache.companies[eid] = '';
                 }
             } catch (_) {}
         }));
+        writeEntityNamesCache(entityNamesCache);
 
         const uniqueCompNames = new Set(Object.values(companyNamesByEntity).filter(Boolean));
         const companyEndpointIsEntityAware = uniqueCompNames.size > 1 || sortedEntityIds.length === 1;
@@ -2835,7 +2915,7 @@ function createHrCard(taskId, ref, label, type) {
                 
 
                 // Mettre à jour l'historique de la carte et les statistiques globales
-                updateDailyTimespentStats();
+                updateDailyTimespentStats(true);
 
                 // Après 3 secondes : masquer le statut, conserver l'état "noté"
                 setTimeout(() => {
@@ -3076,7 +3156,7 @@ async function submitTime() {
                 }
                 loadStandardProjectHistory(taskId);
             }
-            updateDailyTimespentStats(); // Recalcul des totaux après ajout
+            updateDailyTimespentStats(true); // Recalcul des totaux après ajout
             setTimeout(() => {
                 statusDiv.textContent = '';
                 if (noteEl) noteEl.value = '';
