@@ -64,7 +64,9 @@ jobs:
             }
             fs.appendFileSync(process.env.GITHUB_OUTPUT, \`version=\${manifest.version}\n\`);
           "
-          find src ui -name "*.js" -exec node --check {} +
+          # Un fichier par appel (node --check ne lit que le premier), lu comme module ES :
+          # le service worker et les pages importent leurs voisins.
+          for f in $(find src ui -name "*.js"); do node --experimental-default-type=module --check "$f" || exit 1; done
 
       - name: Create distribution ZIP
         run: |
