@@ -124,11 +124,21 @@ async function testDolibarrConnection(apiUrl, login, passwordOrToken, entity) {
                 }
             } catch (_) {}
 
+            // /setup/modules est réservé aux administrateurs : on cherche alors le projet RH comme
+            // loadHrData() et la popup, parmi les projets ouverts du plus récent au plus ancien.
+            // Dans l'ordre par défaut, les 100 premiers projets sont les plus anciens.
             if (!doliSirhChecked && projectsResponse.ok) {
                 try {
-                    const projList = await projectsResponse.json();
-                    if (Array.isArray(projList)) {
-                        hasDoliSirh = Boolean(findDefaultHrProject(projList));
+                    const headers = { ...baseHeaders, 'DOLAPIKEY': apiTokenFinal };
+                    let hrProjectsResponse = await fetchDoli(`${apiUrl}/projects?sqlfilters=(t.fk_statut:=:1)&sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
+                    if (!hrProjectsResponse.ok) {
+                        hrProjectsResponse = await fetchDoli(`${apiUrl}/projects?sortfield=t.rowid&sortorder=DESC&limit=10000`, { headers });
+                    }
+                    if (hrProjectsResponse.ok) {
+                        const projList = await hrProjectsResponse.json();
+                        if (Array.isArray(projList)) {
+                            hasDoliSirh = Boolean(findDefaultHrProject(projList));
+                        }
                     }
                 } catch (_) {}
             }
@@ -741,11 +751,14 @@ async function loadHrData(profile, isManualClick = false) {
             renderPermissions(profile.doliStatus, profile.doliUrl);
             updateOptionsDoliSirhSectionState(!hasDoliSirh);
 
+            const testStatusDiv = document.getElementById('test-status-container');
             if (!hasDoliSirh) {
-                const testStatusDiv = document.getElementById('test-status-container');
                 if (testStatusDiv && !testStatusDiv.querySelector('.dolisirh-missing-warn')) {
                     testStatusDiv.appendChild(createDoliSirhMissingBanner());
                 }
+            } else if (testStatusDiv) {
+                // DoliSIRH trouve ici : le bandeau d'un test precedent n'a plus lieu d'etre
+                testStatusDiv.querySelectorAll('.dolisirh-missing-warn').forEach(el => el.remove());
             }
         }
 
